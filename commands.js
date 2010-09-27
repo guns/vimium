@@ -90,12 +90,11 @@ function clearKeyMappingsAndSetDefaults() {
   mapKeyToCommand('G', 'scrollToBottom');
   mapKeyToCommand('zH', 'scrollToLeft');
   mapKeyToCommand('zL', 'scrollToRight');
-  mapKeyToCommand('<c-e>', 'scrollDown');
-  mapKeyToCommand('<c-y>', 'scrollUp');
   mapKeyToCommand('<c-d>', 'scrollPageDown');
   mapKeyToCommand('<c-u>', 'scrollPageUp');
   mapKeyToCommand('<c-f>', 'scrollFullPageDown');
   mapKeyToCommand('<c-b>', 'scrollFullPageUp');
+  mapKeyToCommand('b', 'scrollFullPageUp');
   mapKeyToCommand('r', 'reload');
   mapKeyToCommand('gs', 'toggleViewSource');
 
@@ -103,6 +102,8 @@ function clearKeyMappingsAndSetDefaults() {
 
   mapKeyToCommand('H', 'goBack');
   mapKeyToCommand('L', 'goForward');
+  mapKeyToCommand('<c-h>', 'goBack');
+  mapKeyToCommand('<c-l>', 'goForward');
   mapKeyToCommand('gu', 'goUp');
 
   mapKeyToCommand('zi', 'zoomIn');
@@ -113,6 +114,9 @@ function clearKeyMappingsAndSetDefaults() {
   mapKeyToCommand('f',     'activateLinkHintsMode');
   mapKeyToCommand('F',     'activateLinkHintsModeToOpenInNewTab');
   mapKeyToCommand('<a-f>', 'activateLinkHintsModeWithQueue');
+  mapKeyToCommand("'",     'activateLinkHintsMode');
+  mapKeyToCommand('"',     'activateLinkHintsModeToOpenInNewTab');
+  mapKeyToCommand(';',     'activateLinkHintsModeWithQueue');
 
   mapKeyToCommand('/', 'enterFindMode');
   mapKeyToCommand('n', 'performFind');
@@ -120,10 +124,12 @@ function clearKeyMappingsAndSetDefaults() {
 
   mapKeyToCommand('yy', 'copyCurrentUrl');
 
-  mapKeyToCommand('K', 'nextTab');
-  mapKeyToCommand('J', 'previousTab');
+  mapKeyToCommand('J', 'nextTab');
+  mapKeyToCommand('K', 'previousTab');
   mapKeyToCommand('gt', 'nextTab');
   mapKeyToCommand('gT', 'previousTab');
+  mapKeyToCommand('<c-j>', 'nextTab');
+  mapKeyToCommand('<c-k>', 'previousTab');
 
   mapKeyToCommand('t', 'createTab');
   mapKeyToCommand('d', 'removeTab');
