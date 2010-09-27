@@ -194,7 +194,7 @@ var commandGroups = {
   pageNavigation:
     ["scrollDown", "scrollUp", "scrollLeft", "scrollRight",
      "scrollToTop", "scrollToBottom", "scrollToLeft", "scrollToRight", "scrollPageDown",
-     "scrollPageUp", "scrollFullPageUp", "scrollFullPageDown",
+     "scrollPageUp", "scrollFullPageDown", "scrollFullPageUp",
      "reload", "toggleViewSource", "zoomIn", "zoomOut", "copyCurrentUrl", "goUp",
      "enterInsertMode", "focusInput",
      "activateLinkHintsMode", "activateLinkHintsModeToOpenInNewTab", "activateLinkHintsModeWithQueue",
