@@ -116,7 +116,7 @@ function clearKeyMappingsAndSetDefaults() {
   mapKeyToCommand('<a-f>', 'activateLinkHintsModeWithQueue');
   mapKeyToCommand("'",     'activateLinkHintsMode');
   mapKeyToCommand(';',     'activateLinkHintsModeToOpenInNewTab');
-  mapKeyToCommand('<C-;>', 'activateLinkHintsModeWithQueue');
+  mapKeyToCommand('<c-;>', 'activateLinkHintsModeWithQueue');
 
   mapKeyToCommand('/', 'enterFindMode');
   mapKeyToCommand('n', 'performFind');
