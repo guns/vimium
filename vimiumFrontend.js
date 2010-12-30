@@ -266,7 +266,7 @@ function reload() { window.location.reload(); }
 function goBack() { history.back(); }
 function goForward() { history.forward(); }
 
-function goUp() {
+function goUp(count) {
   var url = window.location.href;
   if (url[url.length-1] == '/')
     url = url.substring(0, url.length - 1);
@@ -274,7 +274,7 @@ function goUp() {
   var urlsplit = url.split('/');
   // make sure we haven't hit the base domain yet
   if (urlsplit.length > 3) {
-    delete urlsplit[urlsplit.length-1];
+    urlsplit = urlsplit.slice(0, Math.max(3, urlsplit.length - count));
     window.location.href = urlsplit.join('/');
   }
 }
@@ -636,6 +636,7 @@ HUD = {
       "bottom: 0px;" +
       "color: black;" +
       "height: 13px;" +
+      "width: auto;" +
       "max-width: 400px;" +
       "min-width: 150px;" +
       "text-align: left;" +
@@ -798,8 +799,8 @@ Tween = {
 function addCssToPage(css) {
   var head = document.getElementsByTagName("head")[0];
   if (!head) {
-    console.log("Warning: unable to add CSS to the page.");
-    return;
+    head = document.createElement("head");
+    document.documentElement.appendChild(head);
   }
   var style = document.createElement("style");
   style.type = "text/css";
