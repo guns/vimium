@@ -122,6 +122,7 @@ function clearKeyMappingsAndSetDefaults() {
   mapKeyToCommand('n', 'performFind');
   mapKeyToCommand('N', 'performBackwardsFind');
 
+  mapKeyToCommand('Y',  'copyCurrentUrl');
   mapKeyToCommand('yy', 'copyCurrentUrl');
 
   mapKeyToCommand('J', 'nextTab');
