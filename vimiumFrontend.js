@@ -229,6 +229,11 @@ function zoomOut() {
   saveZoomLevel(window.location.host, currentZoomLevel);
 }
 
+function zoomReset() {
+  setPageZoomLevel(100, true);
+  saveZoomLevel(window.location.host, 100);
+}
+
 function scrollToBottom() { window.scrollTo(window.pageXOffset, document.body.scrollHeight); }
 function scrollToTop() { window.scrollTo(window.pageXOffset, 0); }
 function scrollToLeft() { window.scrollTo(0, window.pageYOffset); }
@@ -548,6 +553,45 @@ function performFind() {
 
 function performBackwardsFind() {
   findModeQueryHasResults = window.find(findModeQuery, false, true, true, false, true, false);
+}
+
+function findAndFollowLink(linkStrings) {
+  for (i = 0; i < linkStrings.length; i++) {
+    var findModeQueryHasResults = window.find(linkStrings[i], false, true, true, false, true, false);
+    if (findModeQueryHasResults) {
+      var node = window.getSelection().anchorNode;
+      while (node.nodeName != 'BODY') {
+        if (node.nodeName == 'A') {
+          window.location = node.href;
+          return true;
+        }
+        node = node.parentNode;
+      }
+    }
+  }
+}
+
+function findAndFollowRel(value) {
+  var relTags = ['link', 'a', 'area'];
+  for (i = 0; i < relTags.length; i++) {
+    var elements = document.getElementsByTagName(relTags[i]);
+    for (j = 0; j < elements.length; j++) {
+      if (elements[j].hasAttribute('rel') && elements[j].rel == value) {
+        window.location = elements[j].href;
+        return true;
+      }
+    }
+  }
+}
+
+function goPrevious() {
+  var previousStrings = ["\bprev\b","\bprevious\b","\u00AB","<<","<"];
+  findAndFollowRel('prev') || findAndFollowLink(previousStrings);
+}
+
+function goNext() {
+  var nextStrings = ["\bnext\b","\u00BB",">>","\bmore\b",">"];
+  findAndFollowRel('next') || findAndFollowLink(nextStrings);
 }
 
 function showFindModeHUDForQuery() {
