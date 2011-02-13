@@ -103,12 +103,12 @@ function clearKeyMappingsAndSetDefaults() {
     // scrollPageDown and scrollPageUp are mapped to two keys because they are very common actions so we
     // want them to be mapped without a modifier key, but we also want to be faithful to Vim convention which
     // has them on ctrl+D and ctrl+U.
-    "d": "scrollPageDown",
-    "u": "scrollPageUp",
     "<c-d>": "scrollPageDown",
     "<c-u>": "scrollPageUp",
     "<c-f>": "scrollFullPageDown",
     "<c-b>": "scrollFullPageUp",
+    "f": "scrollFullPageDown",
+    "b": "scrollFullPageUp",
     "r": "reload",
     "gs": "toggleViewSource",
 
@@ -116,6 +116,8 @@ function clearKeyMappingsAndSetDefaults() {
 
     "H": "goBack",
     "L": "goForward",
+    "<c-h>": "goBack",
+    "<c-l>": "goForward",
     "gu": "goUp",
 
     "zi": "zoomIn",
@@ -124,9 +126,9 @@ function clearKeyMappingsAndSetDefaults() {
 
     "gi": "focusInput",
 
-    "f":     "activateLinkHintsMode",
-    "F":     "activateLinkHintsModeToOpenInNewTab",
-    "<a-f>": "activateLinkHintsModeWithQueue",
+    "'":     "activateLinkHintsMode",
+    ";":     "activateLinkHintsModeToOpenInNewTab",
+    "<c-;>": "activateLinkHintsModeWithQueue",
 
     "/": "enterFindMode",
     "n": "performFind",
@@ -137,14 +139,18 @@ function clearKeyMappingsAndSetDefaults() {
 
     "yy": "copyCurrentUrl",
 
-    "K": "nextTab",
-    "J": "previousTab",
+    "J": "nextTab",
+    "K": "previousTab",
     "gt": "nextTab",
     "gT": "previousTab",
+    "<c-j>": "nextTab",
+    "<c-k>": "previousTab",
 
     "t": "createTab",
     "x": "removeTab",
     "X": "restoreTab",
+    "d": "removeTab",
+    "u": "restoreTab",
 
     "gf": "nextFrame"
   };
