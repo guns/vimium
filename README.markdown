@@ -20,8 +20,8 @@ The Settings page can be found by clicking the Options button next to Vimium on 
 Keyboard Bindings
 -----------------
 
-Modifier keys are specified as follows: <c-x>, <m-x>, <a-x> for ctrl+x, meta+x, and alt+x
-respectively.
+Modifier keys are specified as <c-x>, <m-x>, <a-x> for ctrl+x, meta+x, and alt+x
+respectively. You can change any of these shortcuts under "Advanced Options".
 
 Navigating the current page:
     h       scroll left
@@ -30,30 +30,22 @@ Navigating the current page:
     l       scroll right
     gg      scroll to top of the page
     G       scroll to bottom of the page
-    <c-d>, <c-e>   scroll down a page
-    <c-u>, <c-y>   scroll up a page
-    <c-f>   scroll down a full page
-    <c-b>   scroll up a full page
-    zH      scroll all the way left
-    zL      scroll all the way right
-    f       activate link hints mode to open in current tab
-    F       activate link hints mode to open in new tab
-    <a-f>   activate link hints mode to open multiple links in a new tab
+    d, <c-d>  scroll down half a page
+    u, <c-u>  scroll up half a page
+    f       open a link in the current tab
+    F       open a link in a new tab
     r       reload
     gs      view source
     zi      zoom in
     zo      zoom out
-    z0      reset zoom to default value
+    i       enter insert mode -- all commands will be ignored until you hit esc to exit
+    yy      copy the current url to the clipboard
+    gf      cycle forward to the next frame
+
+Using find:
     /       enter find mode -- type your search query and hit enter to search or esc to cancel
     n       cycle forward to the next find match
     N       cycle backward to the previous find match
-    i       enter insert mode -- all commands will be ignored until you hit esc to exit
-    yy      copy the current url to the clipboard
-    gu      go up one level in the URL hierarchy
-    gf      cycle forward to the next frame
-    gi      focus the first (or n-th) text input box on the page
-    ]]      Follow the link labeled 'next' or '>'. Helpful for browsing paginated sites.
-    [[      Follow the link labeled 'previous' or '<'. Helpful for browsing paginated sites.
 
 Navigating your history:
     H       go back in history
@@ -63,36 +55,53 @@ Manipulating tabs:
     J, gT      go one tab left
     K, gt      go one tab right
     t          create tab
-    d          close current tab
-    u          restore closed tab (i.e. unwind the 'd' command)
+    x          close current tab
+    X          restore closed tab (i.e. unwind the 'x' command)
+
+Additional advanced browsing commands:
+    ]]      Follow the link labeled 'next' or '>'. Helpful for browsing paginated sites.
+    [[      Follow the link labeled 'previous' or '<'. Helpful for browsing paginated sites.
+    <a-f>   open multiple links in a new tab
+    gi      focus the first (or n-th) text input box on the page
+    gu      go up one level in the URL hierarchy
+    zH      scroll all the way left
+    zL      scroll all the way right
+    z0      reset zoom to default value
+    <c-f>   scroll down a full page
+    <c-b>   scroll up a full page
+
 
 Vimium supports command repetition so, for example, hitting '5t' will open 5 tabs in rapid succession. ESC (or
 <c-[>) will clear any partial commands in the queue.
 
-Keys can be unmapped and remapped to different commands under Advanced Options.
 
 Contributing
 ------------
 
-You'd like to fix a bug or implement a feature? Great! Check out the bugs on our issues tracker, or implement one of
-the suggestions there that have been tagged 'todo'. If you have a suggestion of your own, start a discussion on
-the issues tracker or on the [mailing list][list_url]. If it mirrors a similar feature in another browser or in Vim
-itself, let us know! Once you've picked something to work on, add a comment to the respective issue so others don't
-duplicate your effort.
+You'd like to fix a bug or implement a feature? Great! Check out the bugs on our issues tracker, or implement
+one of the suggestions there that have been tagged 'todo'. If you have a suggestion of your own, start a
+discussion on the issues tracker or on the [mailing list][list_url]. If it mirrors a similar feature in
+another browser or in Vim itself, let us know! Once you've picked something to work on, add a comment to the
+respective issue so others don't duplicate your effort.
 
 When you're done, send us a pull request on Github. Feel free to include a change to the CREDITS file with your patch.
 
 [list_url]: http://groups.google.com/group/vimium-dev?hl=en
 
+Some brief coding style guidelines: 1) follow the style already present in the file, 2) ensure your lines
+don't exceed 110 characters.
+
 Release Notes
 -------------
 
-1.22
+1.22, 1.23, 1.24, 1.25 (02/10/2011)
 
 -  Some sites are now excluded by default.
 -  View source (`gs`) now opens in a new tab.
 -  Support for browsing paginated sites using `]]` and `[[` to go forward and backward respectively.
 -  `z0` will reset the zoom level for the current page.
+-  Many of the less-used commands are now marked as "advanced" and hidden in the help dialog by default, so that the core command set is more focused and approachable.
+-  Improvements to link hinting.
 -  Bugfixes.
 
 1.21 (10/24/2010)
