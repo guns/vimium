@@ -100,15 +100,8 @@ function clearKeyMappingsAndSetDefaults() {
     "<c-e>": "scrollDown",
     "<c-y>": "scrollUp",
 
-    // scrollPageDown and scrollPageUp are mapped to two keys because they are very common actions so we
-    // want them to be mapped without a modifier key, but we also want to be faithful to Vim convention which
-    // has them on ctrl+D and ctrl+U.
-    "<c-d>": "scrollPageDown",
-    "<c-u>": "scrollPageUp",
     "<c-f>": "scrollFullPageDown",
     "<c-b>": "scrollFullPageUp",
-    "f": "scrollFullPageDown",
-    "b": "scrollFullPageUp",
     "r": "reload",
     "gs": "toggleViewSource",
 
