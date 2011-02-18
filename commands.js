@@ -100,6 +100,8 @@ function clearKeyMappingsAndSetDefaults() {
     "<c-e>": "scrollDown",
     "<c-y>": "scrollUp",
 
+    "f": "scrollFullPageDown",
+    "b": "scrollFullPageUp",
     "<c-f>": "scrollFullPageDown",
     "<c-b>": "scrollFullPageUp",
     "r": "reload",
