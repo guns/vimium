@@ -7,7 +7,7 @@
 
 var getCurrentUrlHandlers = []; // function(url)
 
-var insertMode = false;
+var insertModeLock = null;
 var findMode = false;
 var findModeQuery = "";
 var findModeQueryHasResults = false;
@@ -221,7 +221,7 @@ function registerFrameIfSizeAvailable (is_top) {
 function enterInsertModeIfElementIsFocused() {
   // Enter insert mode automatically if there's already a text box focused.
   if (document.activeElement && isEditable(document.activeElement))
-    enterInsertMode();
+    enterInsertMode(document.activeElement);
 }
 
 /*
@@ -373,7 +373,7 @@ function onKeypress(event) {
         // Don't let the space scroll us if we're searching.
         if (event.keyCode == keyCodes.space)
           event.preventDefault();
-      } else if (!insertMode && !findMode) {
+      } else if (!isInsertMode() && !findMode) {
         if (currentCompletionKeys.indexOf(keyChar) != -1) {
           event.preventDefault();
           event.stopPropagation();
@@ -426,7 +426,7 @@ function onKeydown(event) {
     }
   }
 
-  if (insertMode && isEscape(event))
+  if (isInsertMode() && isEscape(event))
   {
     // Note that we can't programmatically blur out of Flash embeds from Javascript.
     if (!isEmbed(event.srcElement)) {
@@ -456,7 +456,7 @@ function onKeydown(event) {
   {
     hideHelpDialog();
   }
-  else if (!insertMode && !findMode) {
+  else if (!isInsertMode() && !findMode) {
     if (keyChar) {
         if (currentCompletionKeys.indexOf(keyChar) != -1) {
             event.preventDefault();
@@ -477,7 +477,7 @@ function onKeydown(event) {
   // Subject to internationalization issues since we're using keyIdentifier instead of charCode (in keypress).
   //
   // TOOD(ilya): Revisit this. Not sure it's the absolute best approach.
-  if (keyChar == "" && !insertMode
+  if (keyChar == "" && !isInsertMode()
                     && (currentCompletionKeys.indexOf(getKeyChar(event)) != -1 || validFirstKeys[getKeyChar(event)]))
     event.stopPropagation();
 }
@@ -495,7 +495,7 @@ function checkIfEnabledForUrl() {
       if (isEnabledForUrl)
         initializeWhenEnabled();
       else if (HUD.isReady())
-        // Quickly hide any HUD we might already be showing, e.g. if we entered insertMode on page load.
+        // Quickly hide any HUD we might already be showing, e.g. if we entered insert mode on page load.
         HUD.hide();
     });
 }
@@ -519,12 +519,12 @@ function refreshCompletionKeys(response) {
 
 function onFocusCapturePhase(event) {
   if (isFocusable(event.target))
-    enterInsertMode();
+    enterInsertMode(event.target);
 }
 
 function onBlurCapturePhase(event) {
   if (isFocusable(event.target))
-    exitInsertMode();
+    exitInsertMode(event.target);
 }
 
 /*
@@ -542,24 +542,38 @@ function isEmbed(element) { return ["embed", "object"].indexOf(element.nodeName.
  * Input or text elements are considered focusable and able to receieve their own keyboard events,
  * and will enter enter mode if focused. Also note that the "contentEditable" attribute can be set on
  * any element which makes it a rich text editor, like the notes on jjot.com.
- * Note: we used to discriminate for text-only inputs, but this is not accurate since all input fields
- * can be controlled via the keyboard, particuarlly SELECT combo boxes.
  */
 function isEditable(target) {
-  if (target.getAttribute("contentEditable") == "true")
+  if (target.isContentEditable)
     return true;
-  var focusableInputs = ["input", "textarea", "select", "button"];
-  return focusableInputs.indexOf(target.nodeName.toLowerCase()) >= 0;
+  var nodeName = target.nodeName.toLowerCase();
+  // use a blacklist instead of a whitelist because new form controls are still being implemented for html5
+  var noFocus = ["radio", "checkbox"];
+  if (nodeName == "input" && noFocus.indexOf(target.type) == -1)
+    return true;
+  var focusableElements = ["textarea", "select"];
+  return focusableElements.indexOf(nodeName) >= 0;
 }
 
-function enterInsertMode() {
-  insertMode = true;
+// We cannot count on 'focus' and 'blur' events to happen sequentially. For example, if blurring element A
+// causes element B to come into focus, we may get 'B focus' before 'A blur'. Thus we only leave insert mode
+// when the last editable element that came into focus -- which insertModeLock points to -- has been blurred.
+// If insert mode is entered manually (via pressing 'i'), then we set insertModeLock to 'undefined', and only
+// leave insert mode when the user presses <ESC>.
+function enterInsertMode(target) {
+  insertModeLock = target;
   HUD.show("Insert mode");
 }
 
-function exitInsertMode() {
-  insertMode = false;
-  HUD.hide();
+function exitInsertMode(target) {
+  if (target === undefined || insertModeLock === target) {
+    insertModeLock = null;
+    HUD.hide();
+  }
+}
+
+function isInsertMode() {
+  return insertModeLock !== null;
 }
 
 function handleKeyCharForFindMode(keyChar) {
@@ -615,8 +629,8 @@ function findAndFollowLink(linkStrings) {
     var findModeQueryHasResults = window.find(linkStrings[i], false, true, true, false, true, false);
     if (findModeQueryHasResults) {
       var node = window.getSelection().anchorNode;
-      while (node.nodeName != 'BODY') {
-        if (node.nodeName == 'A') {
+      while (node.nodeName.toLowerCase() != 'body') {
+        if (node.nodeName.toLowerCase() == 'a') {
           window.location = node.href;
           return true;
         }
@@ -640,12 +654,15 @@ function findAndFollowRel(value) {
 }
 
 function goPrevious() {
-  var previousStrings = ["\bprev\b","\bprevious\b","\u00AB","<<","<"];
+  // NOTE : If a page contains both a single angle-bracket link and a double angle-bracket link, then in most
+  // cases the single bracket link will be "prev/next page" and the double bracket link will be "first/last
+  // page", so check for single bracket first.
+  var previousStrings = ["\bprev\b", "\bprevious\b", "\bback\b", "<", "←", "«", "≪", "<<"];
   findAndFollowRel('prev') || findAndFollowLink(previousStrings);
 }
 
 function goNext() {
-  var nextStrings = ["\bnext\b","\u00BB",">>","\bmore\b",">"];
+  var nextStrings = ["\bnext\b", "\bmore\b", ">", "→", "»", "≫", ">>"];
   findAndFollowRel('next') || findAndFollowLink(nextStrings);
 }
 
