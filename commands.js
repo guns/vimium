@@ -147,8 +147,7 @@ function clearKeyMappingsAndSetDefaults() {
     "d": "removeTab",
     "u": "restoreTab",
 
-    "b": "activateBookmarkFindMode",
-    "B": "activateBookmarkFindModeToOpenInNewTab",
+    "B": "activateBookmarkFindMode",
 
     "gf": "nextFrame"
   };
