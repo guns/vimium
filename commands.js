@@ -115,10 +115,6 @@ function clearKeyMappingsAndSetDefaults() {
     "<c-l>": "goForward",
     "gu": "goUp",
 
-    "zi": "zoomIn",
-    "zo": "zoomOut",
-    "z0": "zoomReset",
-
     "gi": "focusInput",
 
     "'":     "linkHints.activateMode",
@@ -177,11 +173,8 @@ var commandDescriptions = {
 
   reload: ["Reload the page"],
   toggleViewSource: ["View page source"],
-  zoomIn: ["Zoom in"],
-  zoomOut: ["Zoom out"],
-  zoomReset: ["Reset zoom to default value"],
   copyCurrentUrl: ["Copy the current URL to the clipboard"],
-  
+
   'linkHints.activateModeToCopyLinkUrl': ["Copy a link URL to the clipboard"],
 
   enterInsertMode: ["Enter insert mode"],
@@ -230,7 +223,7 @@ var commandGroups = {
     ["scrollDown", "scrollUp", "scrollLeft", "scrollRight",
      "scrollToTop", "scrollToBottom", "scrollToLeft", "scrollToRight", "scrollPageDown",
      "scrollPageUp", "scrollFullPageUp", "scrollFullPageDown",
-     "reload", "toggleViewSource", "zoomIn", "zoomOut", "zoomReset", "copyCurrentUrl", "linkHints.activateModeToCopyLinkUrl", "goUp",
+     "reload", "toggleViewSource", "copyCurrentUrl", "linkHints.activateModeToCopyLinkUrl", "goUp",
      "enterInsertMode", "focusInput",
      "linkHints.activateMode", "linkHints.activateModeToOpenInNewTab", "linkHints.activateModeWithQueue",
      "activateBookmarkFindMode", "activateBookmarkFindModeToOpenInNewTab",
@@ -249,5 +242,5 @@ var commandGroups = {
 // from Vimium will uncover these gems.
 var advancedCommands = [
     "scrollToLeft", "scrollToRight",
-    "zoomReset", "goUp", "focusInput", "linkHints.activateModeWithQueue",
+    "goUp", "focusInput", "linkHints.activateModeWithQueue",
     "goPrevious", "goNext"];
