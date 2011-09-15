@@ -137,6 +137,8 @@ function clearKeyMappingsAndSetDefaults() {
     "gT": "previousTab",
     "<c-j>": "nextTab",
     "<c-k>": "previousTab",
+    "<c-n>": "nextTab",
+    "<c-p>": "previousTab",
 
     "t": "createTab",
     "x": "removeTab",
