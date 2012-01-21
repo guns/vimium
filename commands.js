@@ -131,18 +131,20 @@ function clearKeyMappingsAndSetDefaults() {
     "yy": "copyCurrentUrl",
     "yf": "linkHints.activateModeToCopyLinkUrl",
 
+    "p": "openCopiedUrlInCurrentTab",
+    "P": "openCopiedUrlInNewTab",
+
     "J": "nextTab",
     "K": "previousTab",
     "gt": "nextTab",
     "gT": "previousTab",
+    "<c-j>": "nextTab",
+    "<c-k>": "previousTab",
     "<c-n>": "nextTab",
     "<c-p>": "previousTab",
 
     "g0": "firstTab",
     "g$": "lastTab",
-
-    "p": "openCopiedUrlInCurrentTab",
-    "P": "openCopiedUrlInNewTab",
 
     "t": "createTab",
     "x": "removeTab",
