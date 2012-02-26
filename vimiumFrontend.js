@@ -8,12 +8,12 @@ var getCurrentUrlHandlers = []; // function(url)
 
 var insertModeLock = null;
 var findMode = false;
-var findModeQuery = "";
+var findModeQuery = { rawQuery: "" };
 var findModeQueryHasResults = false;
+var findModeAnchorNode = null;
 var isShowingHelpDialog = false;
 var handlerStack = [];
 var keyPort;
-var settingPort;
 // Users can disable Vimium on URL patterns via the settings page.
 var isEnabledForUrl = true;
 // The user's operating system.
@@ -34,36 +34,65 @@ var textInputXPath = (function() {
   var inputElements = ["input[" +
     textInputTypes.map(function (type) { return '@type="' + type + '"'; }).join(" or ") + "or not(@type)]",
     "textarea", "*[@contenteditable='' or translate(@contenteditable, 'TRUE', 'true')='true']"];
-  return utils.makeXPath(inputElements);
+  return domUtils.makeXPath(inputElements);
 })();
 
+/**
+ * settings provides a browser-global localStorage-backed dict. get() and set() are synchronous, but load()
+ * must be called beforehand to ensure get() will return up-to-date values.
+ */
 var settings = {
+  port: null,
   values: {},
   loadedValues: 0,
-  valuesToLoad: ["scrollStepSize", "linkHintCharacters", "filterLinkHints", "previousPatterns", "nextPatterns"],
+  valuesToLoad: ["scrollStepSize", "linkHintCharacters", "filterLinkHints", "hideHud", "previousPatterns",
+      "nextPatterns", "findModeRawQuery"],
+  isLoaded: false,
+  eventListeners: {},
+
+  init: function () {
+    this.port = chrome.extension.connect({ name: "settings" });
+    this.port.onMessage.addListener(this.receiveMessage);
+  },
 
   get: function (key) { return this.values[key]; },
 
-  load: function() {
-    for (var i in this.valuesToLoad) { this.sendMessage(this.valuesToLoad[i]); }
+  set: function (key, value) {
+    if (!this.port)
+      this.init();
+
+    this.values[key] = value;
+    this.port.postMessage({ operation: "set", key: key, value: value });
   },
 
-  sendMessage: function (key) {
-    if (!settingPort)
-      settingPort = chrome.extension.connect({ name: "getSetting" });
-    settingPort.postMessage({ key: key });
+  load: function() {
+    if (!this.port)
+      this.init();
+
+    for (var i in this.valuesToLoad) {
+      this.port.postMessage({ operation: "get", key: this.valuesToLoad[i] });
+    }
   },
 
   receiveMessage: function (args) {
     // not using 'this' due to issues with binding on callback
     settings.values[args.key] = args.value;
-    if (++settings.loadedValues == settings.valuesToLoad.length)
-      settings.initializeOnReady();
+    // since load() can be called more than once, loadedValues can be greater than valuesToLoad, but we test
+    // for equality so initializeOnReady only runs once
+    if (++settings.loadedValues == settings.valuesToLoad.length) {
+      settings.isLoaded = true;
+      var listener;
+      while (listener = settings.eventListeners["load"].pop())
+        listener();
+    }
   },
 
-  initializeOnReady: function () {
-    linkHints.init();
-  }
+  addEventListener: function(eventName, callback) {
+    if (!(eventName in this.eventListeners))
+      this.eventListeners[eventName] = [];
+    this.eventListeners[eventName].push(callback);
+  },
+
 };
 
 /*
@@ -78,6 +107,7 @@ var googleRegex = /:\/\/[^/]*google[^/]+/;
  * Complete initialization work that sould be done prior to DOMReady.
  */
 function initializePreDomReady() {
+  settings.addEventListener("load", linkHints.init.bind(linkHints));
   settings.load();
 
   checkIfEnabledForUrl();
@@ -140,14 +170,14 @@ function initializePreDomReady() {
       });
     } else if (port.name == "setScrollPosition") {
       port.onMessage.addListener(function(args) {
-        if (args.scrollX > 0 || args.scrollY > 0) { window.scrollBy(args.scrollX, args.scrollY); }
+        if (args.scrollX > 0 || args.scrollY > 0) {
+          domUtils.documentReady(function() { window.scrollBy(args.scrollX, args.scrollY); });
+        }
       });
     } else if (port.name == "returnCurrentTabUrl") {
       port.onMessage.addListener(function(args) {
         if (getCurrentUrlHandlers.length > 0) { getCurrentUrlHandlers.pop()(args.url); }
       });
-    } else if (port.name == "returnSetting") {
-      port.onMessage.addListener(settings.receiveMessage);
     } else if (port.name == "refreshCompletionKeys") {
       port.onMessage.addListener(function (args) {
         refreshCompletionKeys(args.completionKeys);
@@ -174,6 +204,8 @@ function initializeWhenEnabled() {
  * The backend needs to know which frame has focus.
  */
 window.addEventListener("focus", function(e) {
+  // settings may have changed since the frame last had focus
+  settings.load();
   chrome.extension.sendRequest({ handler: "frameFocused", frameId: frameId });
 });
 
@@ -215,7 +247,7 @@ function registerFrameIfSizeAvailable (is_top) {
  * Enters insert mode if the currently focused element in the DOM is focusable.
  */
 function enterInsertModeIfElementIsFocused() {
-  if (document.activeElement && isEditable(document.activeElement))
+  if (document.activeElement && isEditable(document.activeElement) && !findMode)
     enterInsertModeWithoutShowingIndicator(document.activeElement);
 }
 
@@ -234,7 +266,7 @@ function scrollActivatedElementBy(x, y) {
     return;
   }
 
-  if (!activatedElement || utils.getVisibleClientRect(activatedElement) === null)
+  if (!activatedElement || domUtils.getVisibleClientRect(activatedElement) === null)
     activatedElement = document.body;
 
   // Chrome does not report scrollHeight accurately for nodes with pseudo-elements of height 0 (bug 110149).
@@ -248,17 +280,17 @@ function scrollActivatedElementBy(x, y) {
       var lastElement = element;
       // we may have an orphaned element. if so, just scroll the body element.
       element = element.parentElement || document.body;
-    } while(lastElement.scrollTop == oldScrollTop && lastElement.nodeName.toLowerCase() != 'body');
+    } while(lastElement.scrollTop == oldScrollTop && lastElement != document.body);
   }
 
   if (x !== 0) {
-    element = lastElement;
+    element = activatedElement;
     do {
       var oldScrollLeft = element.scrollLeft;
       element.scrollLeft += x;
       var lastElement = element;
       element = element.parentElement || document.body;
-    } while(lastElement.scrollLeft == oldScrollLeft && lastElement.nodeName.toLowerCase() != 'body');
+    } while(lastElement.scrollLeft == oldScrollLeft && lastElement != document.body);
   }
 
   // if the activated element has been scrolled completely offscreen, subsequent changes in its scroll
@@ -275,16 +307,16 @@ function scrollToTop() { window.scrollTo(window.pageXOffset, 0); }
 function scrollToLeft() { window.scrollTo(0, window.pageYOffset); }
 function scrollToRight() { window.scrollTo(document.body.scrollWidth, window.pageYOffset); }
 function scrollUp() { scrollActivatedElementBy(0, -1 * settings.get("scrollStepSize")); }
-function scrollDown() { scrollActivatedElementBy(0, settings.get("scrollStepSize")); }
+function scrollDown() { scrollActivatedElementBy(0, parseFloat(settings.get("scrollStepSize"))); }
 function scrollPageUp() { scrollActivatedElementBy(0, -1 * window.innerHeight / 2); }
 function scrollPageDown() { scrollActivatedElementBy(0, window.innerHeight / 2); }
 function scrollFullPageUp() { scrollActivatedElementBy(0, -window.innerHeight); }
 function scrollFullPageDown() { scrollActivatedElementBy(0, window.innerHeight); }
 function scrollLeft() { scrollActivatedElementBy(-1 * settings.get("scrollStepSize"), 0); }
-function scrollRight() { scrollActivatedElementBy(settings.get("scrollStepSize"), 0); }
+function scrollRight() { scrollActivatedElementBy(parseFloat(settings.get("scrollStepSize")), 0); }
 
 function focusInput(count) {
-  var results = utils.evaluateXPath(textInputXPath, XPathResult.ORDERED_NODE_ITERATOR_TYPE);
+  var results = domUtils.evaluateXPath(textInputXPath, XPathResult.ORDERED_NODE_ITERATOR_TYPE);
 
   var lastInputBox;
   var i = 0;
@@ -293,7 +325,7 @@ function focusInput(count) {
     var currentInputBox = results.iterateNext();
     if (!currentInputBox) { break; }
 
-    if (utils.getVisibleClientRect(currentInputBox) === null)
+    if (domUtils.getVisibleClientRect(currentInputBox) === null)
         continue;
 
     lastInputBox = currentInputBox;
@@ -339,7 +371,7 @@ function copyCurrentUrl() {
   var getCurrentUrlPort = chrome.extension.connect({ name: "getCurrentTabUrl" });
   getCurrentUrlPort.postMessage({});
 
-	HUD.showForDuration("Yanked URL", 1000);
+  HUD.showForDuration("Yanked URL", 1000);
 }
 
 function toggleViewSourceCallback(url) {
@@ -377,10 +409,7 @@ function onKeypress(event) {
     if (keyChar) {
       if (findMode) {
         handleKeyCharForFindMode(keyChar);
-
-        // Don't let the space scroll us if we're searching.
-        if (event.keyCode == keyCodes.space)
-          event.preventDefault();
+        suppressEvent(event);
       } else if (!isInsertMode() && !findMode) {
         if (currentCompletionKeys.indexOf(keyChar) != -1) {
           event.preventDefault();
@@ -408,6 +437,11 @@ function bubbleEvent(type, event) {
     }
   }
   return true;
+}
+
+function suppressEvent(event) {
+  event.preventDefault();
+  event.stopPropagation();
 }
 
 function onKeydown(event) {
@@ -459,15 +493,19 @@ function onKeydown(event) {
   }
   else if (findMode) {
     if (isEscape(event)) {
-      exitFindMode();
-    // Don't let backspace take us back in history.
+      handleEscapeForFindMode();
+      suppressEvent(event);
     }
     else if (event.keyCode == keyCodes.backspace || event.keyCode == keyCodes.deleteKey) {
       handleDeleteForFindMode();
-      event.preventDefault();
+      suppressEvent(event);
     }
     else if (event.keyCode == keyCodes.enter) {
       handleEnterForFindMode();
+      suppressEvent(event);
+    }
+    else if (!modifiers) {
+      event.stopPropagation();
     }
   }
   else if (isShowingHelpDialog && isEscape(event)) {
@@ -484,6 +522,8 @@ function onKeydown(event) {
     }
     else if (isEscape(event)) {
       keyPort.postMessage({keyChar:"<ESC>", frameId:frameId});
+      handleEscapeForNormalMode();
+      suppressEvent(event);
     }
   }
 
@@ -536,7 +576,7 @@ function refreshCompletionKeys(response) {
 }
 
 function onFocusCapturePhase(event) {
-  if (isFocusable(event.target))
+  if (isFocusable(event.target) && !findMode)
     enterInsertModeWithoutShowingIndicator(event.target);
 }
 
@@ -600,46 +640,138 @@ function exitInsertMode(target) {
 
 function isInsertMode() { return insertModeLock !== null; }
 
+// should be called whenever rawQuery is modified.
+function updateFindModeQuery() {
+  // the query can be treated differently (e.g. as a plain string versus regex depending on the presence of
+  // escape sequences. '\' is the escape character and needs to be escaped itself to be used as a normal
+  // character. here we grep for the relevant escape sequences.
+  findModeQuery.isRegex = false;
+  var hasNoIgnoreCaseFlag = false;
+  findModeQuery.parsedQuery = findModeQuery.rawQuery.replace(/\\./g, function(match) {
+    switch (match) {
+      case "\\r":
+        findModeQuery.isRegex = true;
+        return '';
+      case "\\I":
+        hasNoIgnoreCaseFlag = true;
+        return '';
+      case "\\\\":
+        return "\\";
+      default:
+        return match;
+    }
+  });
+
+  // default to 'smartcase' mode, unless noIgnoreCase is explicitly specified
+  findModeQuery.ignoreCase = !hasNoIgnoreCaseFlag && !/[A-Z]/.test(findModeQuery.parsedQuery);
+
+  // if we are dealing with a regex, grep for all matches in the text, and then call window.find() on them
+  // sequentially so the browser handles the scrolling / text selection.
+  if (findModeQuery.isRegex) {
+    try {
+      var pattern = new RegExp(findModeQuery.parsedQuery, "g" + (findModeQuery.ignoreCase ? "i" : ""));
+    }
+    catch (e) {
+      // if we catch a SyntaxError, assume the user is not done typing yet and return quietly
+      return;
+    }
+    // innerText will not return the text of hidden elements, and strip out tags while preserving newlines
+    var text = document.body.innerText;
+    findModeQuery.regexMatches = text.match(pattern);
+    findModeQuery.activeRegexIndex = 0;
+  }
+}
+
 function handleKeyCharForFindMode(keyChar) {
-  findModeQuery = findModeQuery + keyChar;
+  findModeQuery.rawQuery += keyChar;
+  updateFindModeQuery();
   performFindInPlace();
   showFindModeHUDForQuery();
 }
 
+function handleEscapeForFindMode() {
+  exitFindMode();
+  document.body.classList.remove("vimiumFindMode");
+  // removing the class does not re-color existing selections. we recreate the current selection so it reverts
+  // back to the default color.
+  var selection = window.getSelection();
+  if (!selection.isCollapsed) {
+    var range = window.getSelection().getRangeAt(0);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+  }
+  focusFoundLink() || selectFoundInputElement();
+}
+
 function handleDeleteForFindMode() {
-  if (findModeQuery.length == 0) {
+  if (findModeQuery.rawQuery.length == 0) {
     exitFindMode();
     performFindInPlace();
   }
   else {
-    findModeQuery = findModeQuery.substring(0, findModeQuery.length - 1);
+    findModeQuery.rawQuery = findModeQuery.rawQuery.substring(0, findModeQuery.rawQuery.length - 1);
+    updateFindModeQuery();
     performFindInPlace();
     showFindModeHUDForQuery();
   }
 }
 
+// <esc> sends us into insert mode if possible, but <cr> does not.
+// <esc> corresponds approximately to 'nevermind, I have found it already' while <cr> means 'I want to save
+// this query and do more searches with it'
 function handleEnterForFindMode() {
   exitFindMode();
-  performFindInPlace();
+  focusFoundLink();
+  document.body.classList.add("vimiumFindMode");
+  settings.set("findModeRawQuery", findModeQuery.rawQuery);
 }
 
 function performFindInPlace() {
   var cachedScrollX = window.scrollX;
   var cachedScrollY = window.scrollY;
 
+  var query = findModeQuery.isRegex ? getNextQueryFromRegexMatches(0) : findModeQuery.parsedQuery;
+
   // Search backwards first to "free up" the current word as eligible for the real forward search. This allows
   // us to search in place without jumping around between matches as the query grows.
-  window.find(findModeQuery, false, true, true, false, true, false);
+  executeFind(query, { backwards: true, caseSensitive: !findModeQuery.ignoreCase });
 
   // We need to restore the scroll position because we might've lost the right position by searching
   // backwards.
   window.scrollTo(cachedScrollX, cachedScrollY);
 
-  executeFind();
+  findModeQueryHasResults = executeFind(query, { caseSensitive: !findModeQuery.ignoreCase });
 }
 
-function executeFind(backwards) {
-  findModeQueryHasResults = window.find(findModeQuery, false, backwards, true, false, true, false);
+// :options is an optional dict. valid parameters are 'caseSensitive' and 'backwards'.
+function executeFind(query, options) {
+  options = options || {};
+
+  // rather hacky, but this is our way of signalling to the insertMode listener not to react to the focus
+  // changes that find() induces.
+  var oldFindMode = findMode;
+  findMode = true;
+
+  document.body.classList.add("vimiumFindMode");
+
+  // prevent find from matching its own search query in the HUD
+  HUD.hide(true);
+  // ignore the selectionchange event generated by find()
+  document.removeEventListener("selectionchange",restoreDefaultSelectionHighlight, true);
+  var rv = window.find(query, options.caseSensitive, options.backwards, true, false, true, false);
+  setTimeout(function() {
+    document.addEventListener("selectionchange", restoreDefaultSelectionHighlight, true);
+  }, 0);
+
+  findMode = oldFindMode;
+  // we need to save the anchor node here because <esc> seems to nullify it, regardless of whether we do
+  // preventDefault()
+  findModeAnchorNode = document.getSelection().anchorNode;
+  return rv;
+}
+
+function restoreDefaultSelectionHighlight() {
+  document.body.classList.remove("vimiumFindMode");
 }
 
 function focusFoundLink() {
@@ -650,8 +782,76 @@ function focusFoundLink() {
   }
 }
 
+function isDOMDescendant(parent, child) {
+  var node = child;
+  while (node !== null) {
+    if (node === parent)
+      return true;
+    node = node.parentNode;
+  }
+  return false;
+}
+
+function selectFoundInputElement() {
+  // if the found text is in an input element, getSelection().anchorNode will be null, so we use activeElement
+  // instead. however, since the last focused element might not be the one currently pointed to by find (e.g.
+  // the current one might be disabled and therefore unable to receive focus), we use the approximate
+  // heuristic of checking that the last anchor node is an ancestor of our element.
+  if (findModeQueryHasResults && domUtils.isSelectable(document.activeElement) &&
+      isDOMDescendant(findModeAnchorNode, document.activeElement)) {
+    domUtils.simulateSelect(document.activeElement);
+    // the element has already received focus via find(), so invoke insert mode manually
+    enterInsertModeWithoutShowingIndicator(document.activeElement);
+  }
+}
+
+function getNextQueryFromRegexMatches(stepSize) {
+  if (!findModeQuery.regexMatches)
+    return ""; // find()ing an empty query always returns false
+
+  var totalMatches = findModeQuery.regexMatches.length;
+  findModeQuery.activeRegexIndex += stepSize + totalMatches;
+  findModeQuery.activeRegexIndex %= totalMatches;
+
+  return findModeQuery.regexMatches[findModeQuery.activeRegexIndex];
+}
+
 function findAndFocus(backwards) {
-  executeFind(backwards);
+  // check if the query has been changed by a script in another frame
+  var mostRecentQuery = settings.get("findModeRawQuery") || "";
+  if (mostRecentQuery !== findModeQuery.rawQuery) {
+    findModeQuery.rawQuery = mostRecentQuery;
+    updateFindModeQuery();
+  }
+
+  var query = findModeQuery.isRegex ? getNextQueryFromRegexMatches(backwards ? -1 : 1) :
+                                      findModeQuery.parsedQuery;
+
+  findModeQueryHasResults = executeFind(query, { backwards: backwards, caseSensitive: !findModeQuery.ignoreCase });
+
+  if (!findModeQueryHasResults) {
+    HUD.showForDuration("No matches for '" + findModeQuery.rawQuery + "'", 1000);
+    return;
+  }
+
+  // if we have found an input element via 'n', pressing <esc> immediately afterwards sends us into insert
+  // mode
+  var elementCanTakeInput = domUtils.isSelectable(document.activeElement) &&
+    isDOMDescendant(findModeAnchorNode, document.activeElement);
+  if (elementCanTakeInput) {
+    handlerStack.push({
+      keydown: function(event) {
+        handlerStack.pop();
+        if (isEscape(event)) {
+          domUtils.simulateSelect(document.activeElement);
+          enterInsertModeWithoutShowingIndicator(document.activeElement);
+          return false; // we have 'consumed' this event, so do not propagate
+        }
+        return true;
+      }
+    });
+  }
+
   focusFoundLink();
 }
 
@@ -661,24 +861,83 @@ function performBackwardsFind() { findAndFocus(true); }
 
 function getLinkFromSelection() {
   var node = window.getSelection().anchorNode;
-  while (node.nodeName.toLowerCase() !== 'body') {
+  while (node && node !== document.body) {
     if (node.nodeName.toLowerCase() === 'a') return node;
     node = node.parentNode;
   }
   return null;
 }
 
+// used by the findAndFollow* functions.
+function followLink(link) {
+  link.scrollIntoView();
+  link.focus();
+  domUtils.simulateClick(link);
+}
+
+/**
+ * Find and follow the shortest link (shortest == fewest words) which matches any one of a list of strings.
+ * If there are multiple shortest links, strings are prioritized for exact word matches, followed by their
+ * position in :linkStrings.  Practically speaking, this means we favor 'next page' over 'the next big thing',
+ * and 'more' over 'nextcompany', even if 'next' occurs before 'more' in :linkStrings.
+ */
 function findAndFollowLink(linkStrings) {
-  for (i = 0; i < linkStrings.length; i++) {
-    var hasResults = window.find(linkStrings[i], false, true, true, false, true, false);
-    if (hasResults) {
-      var link = getLinkFromSelection();
-      if (link) {
-        window.location = link.href;
+  var linksXPath = domUtils.makeXPath(["a", "*[@onclick or @role='link']"]);
+  var links = domUtils.evaluateXPath(linksXPath, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE);
+  var shortestLinks = [];
+  var shortestLinkLength = null;
+
+  // at the end of this loop, shortestLinks will be populated with a list of candidates
+  // links lower in the page are more likely to be the ones we want, so we loop through the snapshot backwards
+  for (var i = links.snapshotLength - 1; i >= 0; i--) {
+    var link = links.snapshotItem(i);
+
+    // ensure link is visible (we don't mind if it is scrolled offscreen)
+    var boundingClientRect = link.getBoundingClientRect();
+    if (boundingClientRect.width == 0 || boundingClientRect.height == 0)
+      continue;
+    var computedStyle = window.getComputedStyle(link, null);
+    if (computedStyle.getPropertyValue('visibility') != 'visible' ||
+        computedStyle.getPropertyValue('display') == 'none')
+      continue;
+
+    var linkMatches = false;
+    for (var j = 0; j < linkStrings.length; j++) {
+      if (link.innerText.toLowerCase().indexOf(linkStrings[j]) !== -1) {
+        linkMatches = true;
+        break;
+      }
+    }
+    if (!linkMatches) continue;
+
+    var wordCount = link.innerText.trim().split(/\s+/).length;
+    if (shortestLinkLength === null || wordCount < shortestLinkLength) {
+      shortestLinkLength = wordCount;
+      shortestLinks = [ link ];
+    }
+    else if (wordCount === shortestLinkLength) {
+      shortestLinks.push(link);
+    }
+  }
+
+  // try to get exact word matches first
+  for (var i = 0; i < linkStrings.length; i++)
+    for (var j = 0; j < shortestLinks.length; j++) {
+      var exactWordRegex = new RegExp("\\b" + linkStrings[i] + "\\b", "i");
+      if (exactWordRegex.test(shortestLinks[j].innerText)) {
+        followLink(shortestLinks[j]);
         return true;
       }
     }
-  }
+
+  for (var i = 0; i < linkStrings.length; i++)
+    for (var j = 0; j < shortestLinks.length; j++) {
+      if (shortestLinks[j].innerText.toLowerCase().indexOf(linkStrings[i]) !== -1) {
+        followLink(shortestLinks[j]);
+        return true;
+      }
+    }
+
   return false;
 }
 
@@ -688,7 +947,7 @@ function findAndFollowRel(value) {
     var elements = document.getElementsByTagName(relTags[i]);
     for (j = 0; j < elements.length; j++) {
       if (elements[j].hasAttribute('rel') && elements[j].rel == value) {
-        window.location = elements[j].href;
+        followLink(elements[j]);
         return true;
       }
     }
@@ -708,37 +967,20 @@ function goNext() {
 }
 
 function showFindModeHUDForQuery() {
-  if (findModeQueryHasResults || findModeQuery.length == 0)
-    HUD.show("/" + insertSpaces(findModeQuery));
+  if (findModeQueryHasResults || findModeQuery.parsedQuery.length == 0)
+    HUD.show("/" + findModeQuery.rawQuery);
   else
-    HUD.show("/" + insertSpaces(findModeQuery + " (No Matches)"));
-}
-
-/*
- * We need this so that the find mode HUD doesn't match its own searches.
- */
-function insertSpaces(query) {
-  var newQuery = "";
-
-  for (var i = 0; i < query.length; i++) {
-    if (query[i] == " " || (i + 1 < query.length && query[i + 1] == " "))
-      newQuery = newQuery + query[i];
-    else //  &#8203; is a zero-width space
-      newQuery = newQuery + query[i] + "<span>&#8203;</span>";
-  }
-
-  return newQuery;
+    HUD.show("/" + findModeQuery.rawQuery + " (No Matches)");
 }
 
 function enterFindMode() {
-  findModeQuery = "";
+  findModeQuery = { rawQuery: "" };
   findMode = true;
   HUD.show("/");
 }
 
 function exitFindMode() {
   findMode = false;
-  focusFoundLink();
   HUD.hide();
 }
 
@@ -772,6 +1014,15 @@ function hideHelpDialog(clickEvent) {
     clickEvent.preventDefault();
 }
 
+// do our best to return the document to its 'default' state.
+function handleEscapeForNormalMode() {
+  window.getSelection().collapse();
+  if (document.activeElement !== document.body)
+    document.activeElement.blur();
+  else if (window.top !== window.self)
+    chrome.extension.sendRequest({ handler: "focusTopFrame" });
+}
+
 /*
  * A heads-up-display (HUD) for showing Vimium page operations.
  * Note: you cannot interact with the HUD until document.body is available.
@@ -792,6 +1043,7 @@ HUD = {
   },
 
   show: function(text) {
+    if (!HUD.enabled()) return;
     clearTimeout(HUD._showForDurationTimerId);
     HUD.displayElement().innerHTML = text;
     clearInterval(HUD._tweenId);
@@ -851,14 +1103,21 @@ HUD = {
     return element;
   },
 
-  hide: function() {
+  hide: function(immediate) {
     clearInterval(HUD._tweenId);
-    HUD._tweenId = Tween.fade(HUD.displayElement(), 0, 150,
-      function() { HUD.displayElement().style.display = "none"; });
+    if (immediate)
+      HUD.displayElement().style.display = "none";
+    else
+      HUD._tweenId = Tween.fade(HUD.displayElement(), 0, 150,
+        function() { HUD.displayElement().style.display = "none"; });
     this.isShowing = false;
   },
 
-  isReady: function() { return document.body != null; }
+  isReady: function() { return document.body != null; },
+
+  /* A preference which can be toggled in the Options page. */
+  enabled: function() { return settings.get("hideHud") !== "true"; }
+
 };
 
 Tween = {
