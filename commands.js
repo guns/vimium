@@ -119,9 +119,9 @@ function clearKeyMappingsAndSetDefaults() {
 
     "'":     "linkHints.activateMode",
     ";":     "linkHints.activateModeToOpenInNewTab",
-    "<c-;>": "linkHints.activateModeWithQueue",
 
     "/": "enterFindMode",
+    "\\": "enterFindMode",
     "n": "performFind",
     "N": "performBackwardsFind",
 
@@ -129,7 +129,7 @@ function clearKeyMappingsAndSetDefaults() {
     "]]": "goNext",
 
     "yy": "copyCurrentUrl",
-    "yf": "linkHints.activateModeToCopyLinkUrl",
+    "<C-;>": "linkHints.activateModeToCopyLinkUrl",
 
     "p": "openCopiedUrlInCurrentTab",
     "P": "openCopiedUrlInNewTab",
