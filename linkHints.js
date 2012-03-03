@@ -33,7 +33,7 @@ var linkHints = {
     this.onKeyDownInMode = this.onKeyDownInMode.bind(this);
     this.onKeyPressInMode = this.onKeyPressInMode.bind(this);
     this.onKeyUpInMode = this.onKeyUpInMode.bind(this);
-    this.markerMatcher = settings.get('filterLinkHints') == "true" ? filterHints : alphabetHints;
+    this.markerMatcher = settings.get('filterLinkHints') ? filterHints : alphabetHints;
   },
 
   /*
@@ -41,7 +41,8 @@ var linkHints = {
    * The final expression will be something like "//button | //xhtml:button | ..."
    * We use translate() instead of lower-case() because Chrome only supports XPath 1.0.
    */
-  clickableElementsXPath: domUtils.makeXPath(["a", "area[@href]", "textarea", "button", "select","input[not(@type='hidden')]",
+  clickableElementsXPath: domUtils.makeXPath(["a", "area[@href]", "textarea", "button", "select",
+                             "input[not(@type='hidden' or @disabled or @readonly)]",
                              "*[@onclick or @tabindex or @role='link' or @role='button' or " +
                              "@contenteditable='' or translate(@contenteditable, 'TRUE', 'true')='true']"]),
 

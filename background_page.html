@@ -14,7 +14,6 @@
   var singleKeyCommands = [];
   var focusedFrame = null;
   var framesForTab = {};
-  var lastActiveTabIds = {};
 
   // Keys are either literal characters, or "named" - for example <a-b> (alt+b), <left> (left arrow) or <f12>
   // This regular expression captures two groups: the first is a named key, the second is the remainder of
@@ -38,7 +37,6 @@
     openOptionsPageInNewTab: openOptionsPageInNewTab,
     registerFrame: registerFrame,
     frameFocused: handleFrameFocused,
-    focusTopFrame: focusTopFrame,
     upgradeNotificationClosed: upgradeNotificationClosed,
     updateScrollPosition: handleUpdateScrollPosition,
     copyToClipboard: copyToClipboard,
@@ -274,10 +272,6 @@
 
   chrome.tabs.onSelectionChanged.addListener(function(tabId, selectionInfo) {
     if (selectionChangedHandlers.length > 0) { selectionChangedHandlers.pop().call(); }
-
-    if (lastActiveTabIds[selectionInfo.windowId] !== undefined)
-      chrome.tabs.sendRequest(lastActiveTabIds[selectionInfo.windowId], { name: "exitImplicitInsertMode" });
-    lastActiveTabIds[selectionInfo.windowId] = tabId;
   });
 
   function repeatFunction(func, totalCount, currentCount, frameId) {
@@ -399,7 +393,6 @@
 
   chrome.windows.onRemoved.addListener(function(windowId) {
     delete tabQueue[windowId];
-    delete lastActiveTabIds[windowId];
   });
 
   function restoreTab(callback) {
@@ -629,7 +622,6 @@
 
     if (request.is_top) {
       focusedFrame = request.frameId;
-      framesForTab[sender.tab.id].topId = request.frameId;
       framesForTab[sender.tab.id].total = request.total;
     }
 
@@ -655,11 +647,6 @@
     }
 
     chrome.tabs.sendRequest(tabId, { name: "focusFrame", frameId: mainFrameId, highlight: false });
-  }
-
-  function focusTopFrame(request, sender) {
-    var tabId = sender.tab.id;
-    chrome.tabs.sendRequest(tabId, { name: "focusFrame", frameId: framesForTab[tabId].topId, highlight: true });
   }
 
   function handleFrameFocused(request, sender) {

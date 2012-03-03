@@ -87,7 +87,7 @@
 
   <script type="text/javascript">
   $ = function(id) { return document.getElementById(id); };
-  var defaultSettings = chrome.extension.getBackgroundPage().settings.defaults;
+  var bgSettings = chrome.extension.getBackgroundPage().settings;
 
   var editableFields = ["scrollStepSize", "excludedUrls", "linkHintCharacters", "userDefinedLinkHintCss",
                         "keyMappings", "filterLinkHints", "previousPatterns", "nextPatterns", "hideHud"];
@@ -104,10 +104,7 @@
   };
 
   function initializeOptions() {
-    if (settings.isLoaded)
-      populateOptions();
-    else
-      settings.addEventListener("load", populateOptions);
+    populateOptions();
 
     for (var i = 0; i < editableFields.length; i++) {
       $(editableFields[i]).addEventListener("keyup", onOptionKeyup, false);
@@ -123,7 +120,8 @@
   }
 
   function onOptionKeyup(event) {
-    if (event.target.getAttribute("savedValue") != event.target.value)
+    if (event.target.getAttribute("type") !== "checkbox" &&
+        event.target.getAttribute("savedValue") != event.target.value)
       enableSaveButton();
   }
 
@@ -143,7 +141,7 @@
 
       var fieldValue;
       if (field.getAttribute("type") == "checkbox") {
-        fieldValue = field.checked ? "true" : "false";
+        fieldValue = field.checked;
       } else {
         fieldValue = field.value.trim();
         field.value = fieldValue;
@@ -151,10 +149,10 @@
 
       // If it's empty and not a field that we allow to be empty, restore to the default value
       if (!fieldValue && canBeEmptyFields.indexOf(fieldName) == -1) {
-        settings.clear(fieldName);
-        fieldValue = settings.get(fieldName);
+        bgSettings.clear(fieldName);
+        fieldValue = bgSettings.get(fieldName);
       } else
-        settings.set(fieldName, fieldValue);
+        bgSettings.set(fieldName, fieldValue);
 
       $(fieldName).value = fieldValue;
       $(fieldName).setAttribute("savedValue", fieldValue);
@@ -167,7 +165,7 @@
   // Restores select box state to saved value from localStorage.
   function populateOptions() {
     for (var i = 0; i < editableFields.length; i++) {
-      var val = settings.get(editableFields[i]) || "";
+      var val = bgSettings.get(editableFields[i]) || "";
       setFieldValue($(editableFields[i]), val);
     }
     onDataLoaded();
@@ -175,7 +173,7 @@
 
   function restoreToDefaults() {
     for (var i = 0; i < editableFields.length; i++) {
-      var val = defaultSettings[editableFields[i]] || "";
+      var val = bgSettings.defaults[editableFields[i]] || "";
       setFieldValue($(editableFields[i]), val);
     }
     onDataLoaded();
@@ -184,11 +182,11 @@
 
   function setFieldValue(field, value) {
     if (field.getAttribute('type') == 'checkbox')
-      field.checked = value == "true";
-    else
+      field.checked = value;
+    else {
       field.value = value;
-
-    field.setAttribute("savedValue", value);
+      field.setAttribute("savedValue", value);
+    }
   }
 
   function openAdvancedOptions(event) {

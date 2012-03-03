@@ -32,7 +32,8 @@ var activatedElement;
 var textInputXPath = (function() {
   var textInputTypes = ["text", "search", "email", "url", "number", "password"];
   var inputElements = ["input[" +
-    textInputTypes.map(function (type) { return '@type="' + type + '"'; }).join(" or ") + "or not(@type)]",
+    "(" + textInputTypes.map(function(type) {return '@type="' + type + '"'}).join(" or ") + "or not(@type))" +
+    " and not(@disabled or @readonly)]",
     "textarea", "*[@contenteditable='' or translate(@contenteditable, 'TRUE', 'true')='true']"];
   return domUtils.makeXPath(inputElements);
 })();
@@ -101,7 +102,6 @@ var settings = {
 frameId = Math.floor(Math.random()*999999999)
 
 var hasModifiersRegex = /^<([amc]-)+.>/;
-var googleRegex = /:\/\/[^/]*google[^/]+/;
 
 /*
  * Complete initialization work that sould be done prior to DOMReady.
@@ -136,11 +136,6 @@ function initializePreDomReady() {
         focusThisFrame(request.highlight);
     } else if (request.name == "refreshCompletionKeys") {
       refreshCompletionKeys(request);
-    } else if (request.name == "exitImplicitInsertMode") {
-      if (!HUD.isShowing) {
-        document.activeElement.blur();
-        exitInsertMode();
-      }
     }
     sendResponse({}); // Free up the resources used by this open connection.
   });
@@ -259,46 +254,48 @@ function onDOMActivate(event) {
  * activatedElement is different from document.activeElement -- the latter seems to be reserved mostly for
  * input elements. This mechanism allows us to decide whether to scroll a div or to scroll the whole document.
  */
-function scrollActivatedElementBy(x, y) {
+function scrollActivatedElementBy(direction, amount) {
   // if this is called before domReady, just use the window scroll function
   if (!document.body) {
-    window.scrollBy(x, y);
+    if (direction === "x")
+      window.scrollBy(amount, 0);
+    else // "y"
+      window.scrollBy(0, amount);
     return;
   }
 
-  if (!activatedElement || domUtils.getVisibleClientRect(activatedElement) === null)
+  // TODO refactor and put this together with the code in getVisibleClientRect
+  function isRendered(element) {
+    var computedStyle = window.getComputedStyle(element, null);
+    return !(computedStyle.getPropertyValue('visibility') != 'visible' ||
+        computedStyle.getPropertyValue('display') == 'none');
+  }
+
+  if (!activatedElement || !isRendered(activatedElement))
     activatedElement = document.body;
+
+  scrollName = direction === "x" ? "scrollLeft" : "scrollTop";
 
   // Chrome does not report scrollHeight accurately for nodes with pseudo-elements of height 0 (bug 110149).
   // Therefore we just try to increase scrollTop blindly -- if it fails we know we have reached the end of the
   // content.
-  if (y !== 0) {
+  if (amount !== 0) {
     var element = activatedElement;
     do {
-      var oldScrollTop = element.scrollTop;
-      element.scrollTop += y;
+      var oldScrollValue = element[scrollName];
+      element[scrollName] += amount;
       var lastElement = element;
       // we may have an orphaned element. if so, just scroll the body element.
       element = element.parentElement || document.body;
-    } while(lastElement.scrollTop == oldScrollTop && lastElement != document.body);
-  }
-
-  if (x !== 0) {
-    element = activatedElement;
-    do {
-      var oldScrollLeft = element.scrollLeft;
-      element.scrollLeft += x;
-      var lastElement = element;
-      element = element.parentElement || document.body;
-    } while(lastElement.scrollLeft == oldScrollLeft && lastElement != document.body);
+    } while(lastElement[scrollName] == oldScrollValue && lastElement != document.body);
   }
 
   // if the activated element has been scrolled completely offscreen, subsequent changes in its scroll
   // position will not provide any more visual feedback to the user. therefore we deactivate it so that
   // subsequent scrolls only move the parent element.
   var rect = activatedElement.getBoundingClientRect();
-  if (rect.top < 0 || rect.top > window.innerHeight ||
-      rect.left < 0 || rect.left > window.innerWidth)
+  if (rect.bottom < 0 || rect.top > window.innerHeight ||
+      rect.right < 0 || rect.left > window.innerWidth)
     activatedElement = lastElement;
 }
 
@@ -306,14 +303,14 @@ function scrollToBottom() { window.scrollTo(window.pageXOffset, document.body.sc
 function scrollToTop() { window.scrollTo(window.pageXOffset, 0); }
 function scrollToLeft() { window.scrollTo(0, window.pageYOffset); }
 function scrollToRight() { window.scrollTo(document.body.scrollWidth, window.pageYOffset); }
-function scrollUp() { scrollActivatedElementBy(0, -1 * settings.get("scrollStepSize")); }
-function scrollDown() { scrollActivatedElementBy(0, parseFloat(settings.get("scrollStepSize"))); }
-function scrollPageUp() { scrollActivatedElementBy(0, -1 * window.innerHeight / 2); }
-function scrollPageDown() { scrollActivatedElementBy(0, window.innerHeight / 2); }
-function scrollFullPageUp() { scrollActivatedElementBy(0, -window.innerHeight); }
-function scrollFullPageDown() { scrollActivatedElementBy(0, window.innerHeight); }
-function scrollLeft() { scrollActivatedElementBy(-1 * settings.get("scrollStepSize"), 0); }
-function scrollRight() { scrollActivatedElementBy(parseFloat(settings.get("scrollStepSize")), 0); }
+function scrollUp() { scrollActivatedElementBy("y", -1 * settings.get("scrollStepSize")); }
+function scrollDown() { scrollActivatedElementBy("y", parseFloat(settings.get("scrollStepSize"))); }
+function scrollPageUp() { scrollActivatedElementBy("y", -1 * window.innerHeight / 2); }
+function scrollPageDown() { scrollActivatedElementBy("y", window.innerHeight / 2); }
+function scrollFullPageUp() { scrollActivatedElementBy("y", -window.innerHeight); }
+function scrollFullPageDown() { scrollActivatedElementBy("y", window.innerHeight); }
+function scrollLeft() { scrollActivatedElementBy("x", -1 * settings.get("scrollStepSize")); }
+function scrollRight() { scrollActivatedElementBy("x", parseFloat(settings.get("scrollStepSize"))); }
 
 function focusInput(count) {
   var results = domUtils.evaluateXPath(textInputXPath, XPathResult.ORDERED_NODE_ITERATOR_TYPE);
@@ -484,11 +481,7 @@ function onKeydown(event) {
       if (isEditable(event.srcElement))
         event.srcElement.blur();
       exitInsertMode();
-
-      // Added to prevent Google Instant from reclaiming the keystroke and putting us back into the search
-      // box.
-      if (isGoogleSearch())
-        event.stopPropagation();
+      suppressEvent(event);
     }
   }
   else if (findMode) {
@@ -522,8 +515,6 @@ function onKeydown(event) {
     }
     else if (isEscape(event)) {
       keyPort.postMessage({keyChar:"<ESC>", frameId:frameId});
-      handleEscapeForNormalMode();
-      suppressEvent(event);
     }
   }
 
@@ -555,12 +546,6 @@ function checkIfEnabledForUrl() {
       // Quickly hide any HUD we might already be showing, e.g. if we entered insert mode on page load.
       HUD.hide();
   });
-}
-
-// TODO(ilya): This just checks if "google" is in the domain name. Probably should be more targeted.
-function isGoogleSearch() {
-  var url = window.location.toString();
-  return !!url.match(googleRegex);
 }
 
 function refreshCompletionKeys(response) {
@@ -869,25 +854,30 @@ function getLinkFromSelection() {
 }
 
 // used by the findAndFollow* functions.
-function followLink(link) {
-  link.scrollIntoView();
-  link.focus();
-  domUtils.simulateClick(link);
+function followLink(linkElement) {
+  if (linkElement.nodeName.toLowerCase() === 'link')
+    window.location.href = linkElement.href;
+  else {
+    // if we can click on it, don't simply set location.href: some next/prev links are meant to trigger AJAX
+    // calls, like the 'more' button on GitHub's newsfeed.
+    linkElement.scrollIntoView();
+    linkElement.focus();
+    domUtils.simulateClick(linkElement);
+  }
 }
 
 /**
- * Find and follow the shortest link (shortest == fewest words) which matches any one of a list of strings.
- * If there are multiple shortest links, strings are prioritized for exact word matches, followed by their
- * position in :linkStrings.  Practically speaking, this means we favor 'next page' over 'the next big thing',
- * and 'more' over 'nextcompany', even if 'next' occurs before 'more' in :linkStrings.
+ * Find and follow a link which matches any one of a list of strings. If there are multiple such links, they
+ * are prioritized for shortness, by their position in :linkStrings, how far down the page they are located,
+ * and finally by whether the match is exact. Practically speaking, this means we favor 'next page' over 'the
+ * next big thing', and 'more' over 'nextcompany', even if 'next' occurs before 'more' in :linkStrings.
  */
 function findAndFollowLink(linkStrings) {
   var linksXPath = domUtils.makeXPath(["a", "*[@onclick or @role='link']"]);
   var links = domUtils.evaluateXPath(linksXPath, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE);
-  var shortestLinks = [];
-  var shortestLinkLength = null;
+  var candidateLinks = [];
 
-  // at the end of this loop, shortestLinks will be populated with a list of candidates
+  // at the end of this loop, candidateLinks will contain all visible links that match our patterns
   // links lower in the page are more likely to be the ones we want, so we loop through the snapshot backwards
   for (var i = links.snapshotLength - 1; i >= 0; i--) {
     var link = links.snapshotItem(i);
@@ -910,30 +900,40 @@ function findAndFollowLink(linkStrings) {
     }
     if (!linkMatches) continue;
 
-    var wordCount = link.innerText.trim().split(/\s+/).length;
-    if (shortestLinkLength === null || wordCount < shortestLinkLength) {
-      shortestLinkLength = wordCount;
-      shortestLinks = [ link ];
-    }
-    else if (wordCount === shortestLinkLength) {
-      shortestLinks.push(link);
-    }
+    candidateLinks.push(link);
   }
+
+  if (candidateLinks.length === 0) return;
+
+  function wordCount(link) { return link.innerText.trim().split(/\s+/).length; }
+
+  // We can use this trick to ensure that Array.sort is stable. We need this property to retain the reverse
+  // in-page order of the links.
+  candidateLinks.forEach(function(a,i){ a.originalIndex = i; });
+
+  // favor shorter links, and ignore those that are more than one word longer than the shortest link
+  candidateLinks =
+    candidateLinks
+      .sort(function(a,b) {
+        var wcA = wordCount(a), wcB = wordCount(b);
+        return wcA === wcB ? a.originalIndex - b.originalIndex : wcA - wcB;
+      })
+      .filter(function(a){return wordCount(a) <= wordCount(candidateLinks[0]) + 1});
 
   // try to get exact word matches first
   for (var i = 0; i < linkStrings.length; i++)
-    for (var j = 0; j < shortestLinks.length; j++) {
+    for (var j = 0; j < candidateLinks.length; j++) {
       var exactWordRegex = new RegExp("\\b" + linkStrings[i] + "\\b", "i");
-      if (exactWordRegex.test(shortestLinks[j].innerText)) {
-        followLink(shortestLinks[j]);
+      if (exactWordRegex.test(candidateLinks[j].innerText)) {
+        followLink(candidateLinks[j]);
         return true;
       }
     }
 
   for (var i = 0; i < linkStrings.length; i++)
-    for (var j = 0; j < shortestLinks.length; j++) {
-      if (shortestLinks[j].innerText.toLowerCase().indexOf(linkStrings[i]) !== -1) {
-        followLink(shortestLinks[j]);
+    for (var j = 0; j < candidateLinks.length; j++) {
+      if (candidateLinks[j].innerText.toLowerCase().indexOf(linkStrings[i]) !== -1) {
+        followLink(candidateLinks[j]);
         return true;
       }
     }
@@ -1014,15 +1014,6 @@ function hideHelpDialog(clickEvent) {
     clickEvent.preventDefault();
 }
 
-// do our best to return the document to its 'default' state.
-function handleEscapeForNormalMode() {
-  window.getSelection().collapse();
-  if (document.activeElement !== document.body)
-    document.activeElement.blur();
-  else if (window.top !== window.self)
-    chrome.extension.sendRequest({ handler: "focusTopFrame" });
-}
-
 /*
  * A heads-up-display (HUD) for showing Vimium page operations.
  * Note: you cannot interact with the HUD until document.body is available.
@@ -1031,7 +1022,6 @@ HUD = {
   _tweenId: -1,
   _displayElement: null,
   _upgradeNotificationElement: null,
-  isShowing: false,
 
   // This HUD is styled to precisely mimick the chrome HUD on Mac. Use the "has_popup_and_link_hud.html"
   // test harness to tweak these styles to match Chrome's. One limitation of our HUD display is that
@@ -1049,7 +1039,6 @@ HUD = {
     clearInterval(HUD._tweenId);
     HUD._tweenId = Tween.fade(HUD.displayElement(), 1.0, 150);
     HUD.displayElement().style.display = "";
-    this.isShowing = true;
   },
 
   showUpgradeNotification: function(version) {
@@ -1110,13 +1099,12 @@ HUD = {
     else
       HUD._tweenId = Tween.fade(HUD.displayElement(), 0, 150,
         function() { HUD.displayElement().style.display = "none"; });
-    this.isShowing = false;
   },
 
   isReady: function() { return document.body != null; },
 
   /* A preference which can be toggled in the Options page. */
-  enabled: function() { return settings.get("hideHud") !== "true"; }
+  enabled: function() { return !settings.get("hideHud"); }
 
 };
 
