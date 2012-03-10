@@ -408,10 +408,8 @@ function onKeypress(event) {
         handleKeyCharForFindMode(keyChar);
         suppressEvent(event);
       } else if (!isInsertMode() && !findMode) {
-        if (currentCompletionKeys.indexOf(keyChar) != -1) {
-          event.preventDefault();
-          event.stopPropagation();
-        }
+        if (currentCompletionKeys.indexOf(keyChar) != -1)
+          suppressEvent(event);
 
         keyPort.postMessage({keyChar:keyChar, frameId:frameId});
       }
@@ -428,8 +426,7 @@ function bubbleEvent(type, event) {
     // We need to check for existence of handler because the last function call may have caused the release of
     // more than one handler.
     if (handlerStack[i] && handlerStack[i][type] && !handlerStack[i][type](event)) {
-      event.preventDefault();
-      event.stopPropagation();
+      suppressEvent(event);
       return false;
     }
   }
@@ -506,10 +503,8 @@ function onKeydown(event) {
   }
   else if (!isInsertMode() && !findMode) {
     if (keyChar) {
-      if (currentCompletionKeys.indexOf(keyChar) != -1) {
-          event.preventDefault();
-          event.stopPropagation();
-      }
+      if (currentCompletionKeys.indexOf(keyChar) != -1)
+        suppressEvent(event);
 
       keyPort.postMessage({keyChar:keyChar, frameId:frameId});
     }
@@ -526,7 +521,7 @@ function onKeydown(event) {
   //
   // TOOD(ilya): Revisit this. Not sure it's the absolute best approach.
   if (keyChar == "" && !isInsertMode() && (currentCompletionKeys.indexOf(getKeyChar(event)) != -1 ||
-      validFirstKeys[getKeyChar(event)]))
+      isValidFirstKey(getKeyChar(event))))
     event.stopPropagation();
 }
 
@@ -558,6 +553,10 @@ function refreshCompletionKeys(response) {
   else {
     chrome.extension.sendRequest({ handler: "getCompletionKeys" }, refreshCompletionKeys);
   }
+}
+
+function isValidFirstKey(keyChar) {
+  return validFirstKeys[keyChar] || /\d/.test(keyChar);
 }
 
 function onFocusCapturePhase(event) {
@@ -873,7 +872,7 @@ function followLink(linkElement) {
  * next big thing', and 'more' over 'nextcompany', even if 'next' occurs before 'more' in :linkStrings.
  */
 function findAndFollowLink(linkStrings) {
-  var linksXPath = domUtils.makeXPath(["a", "*[@onclick or @role='link']"]);
+  var linksXPath = domUtils.makeXPath(["a", "*[@onclick or @role='link' or contains(@class, 'button')]"]);
   var links = domUtils.evaluateXPath(linksXPath, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE);
   var candidateLinks = [];
 
@@ -1142,13 +1141,14 @@ Tween = {
 /*
  * Adds the given CSS to the page.
  */
-function addCssToPage(css) {
+function addCssToPage(css, id) {
   var head = document.getElementsByTagName("head")[0];
   if (!head) {
     head = document.createElement("head");
     document.documentElement.appendChild(head);
   }
   var style = document.createElement("style");
+  style.id = id;
   style.type = "text/css";
   style.appendChild(document.createTextNode(css));
   head.appendChild(style);

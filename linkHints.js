@@ -11,15 +11,10 @@
 var linkHints = {
   hintMarkers: [],
   hintMarkerContainingDiv: null,
-  // The characters that were typed in while in "link hints" mode.
   shouldOpenInNewTab: false,
   shouldOpenWithQueue: false,
-  // flag for copying link instead of opening
-  shouldCopyLinkUrl: false,
-  // Whether link hint's "open in current/new tab" setting is currently toggled
-  openLinkModeToggle: false,
-  // Whether we have added to the page the CSS needed to display link hints.
-  cssAdded: false,
+  // function that does the appropriate action on the selected link
+  linkActivator: undefined,
   // While in delayMode, all keypresses have no effect.
   delayMode: false,
   // Handle the link hinting marker generation and matching. Must be initialized after settings have been
@@ -31,8 +26,6 @@ var linkHints = {
    */
   init: function() {
     this.onKeyDownInMode = this.onKeyDownInMode.bind(this);
-    this.onKeyPressInMode = this.onKeyPressInMode.bind(this);
-    this.onKeyUpInMode = this.onKeyUpInMode.bind(this);
     this.markerMatcher = settings.get('filterLinkHints') ? filterHints : alphabetHints;
   },
 
@@ -43,45 +36,56 @@ var linkHints = {
    */
   clickableElementsXPath: domUtils.makeXPath(["a", "area[@href]", "textarea", "button", "select",
                              "input[not(@type='hidden' or @disabled or @readonly)]",
-                             "*[@onclick or @tabindex or @role='link' or @role='button' or " +
+                             "*[@onclick or @tabindex or @role='link' or @role='button' or contains(@class, 'button') or " +
                              "@contenteditable='' or translate(@contenteditable, 'TRUE', 'true')='true']"]),
 
   // We need this as a top-level function because our command system doesn't yet support arguments.
   activateModeToOpenInNewTab: function() { this.activateMode(true, false, false); },
 
-  activateModeToCopyLinkUrl: function() { this.activateMode(false, false, true); },
+  activateModeToCopyLinkUrl: function() { this.activateMode(null, false, true); },
 
   activateModeWithQueue: function() { this.activateMode(true, true, false); },
 
   activateMode: function(openInNewTab, withQueue, copyLinkUrl) {
-    if (!this.cssAdded)
+    if (!document.getElementById('vimiumLinkHintCss'))
       // linkHintCss is declared by vimiumFrontend.js and contains the user supplied css overrides.
-      addCssToPage(linkHintCss); 
-    this.linkHintCssAdded = true;
+      addCssToPage(linkHintCss, 'vimiumLinkHintCss');
     this.setOpenLinkMode(openInNewTab, withQueue, copyLinkUrl);
     this.buildLinkHints();
-    handlerStack.push({ // modeKeyHandler is declared by vimiumFrontend.js
+    handlerStack.push({ // handlerStack is declared by vimiumFrontend.js
       keydown: this.onKeyDownInMode,
-      keypress: this.onKeyPressInMode,
-      keyup: this.onKeyUpInMode
+      // trap all key events
+      keypress: function() { return false; },
+      keyup: function() { return false; }
     });
-
-    this.openLinkModeToggle = false;
   },
 
   setOpenLinkMode: function(openInNewTab, withQueue, copyLinkUrl) {
     this.shouldOpenInNewTab = openInNewTab;
     this.shouldOpenWithQueue = withQueue;
-    this.shouldCopyLinkUrl = copyLinkUrl;
-    if (this.shouldCopyLinkUrl) {
-      HUD.show("Copy link URL to Clipboard");
-    } else if (this.shouldOpenWithQueue) {
-      HUD.show("Open multiple links in a new tab");
-    } else {
-      if (this.shouldOpenInNewTab)
+
+    if (openInNewTab || withQueue) {
+      if (openInNewTab)
         HUD.show("Open link in new tab");
-      else
-        HUD.show("Open link in current tab");
+      else if (withQueue)
+        HUD.show("Open multiple links in a new tab");
+      this.linkActivator = function(link) {
+        // When "clicking" on a link, dispatch the event with the appropriate meta key (CMD on Mac, CTRL on windows)
+        // to open it in a new tab if necessary.
+        domUtils.simulateClick(link, { metaKey: platform == "Mac", ctrlKey: platform != "Mac" });
+      }
+    } else if (copyLinkUrl) {
+      HUD.show("Copy link URL to Clipboard");
+      this.linkActivator = function(link) {
+        chrome.extension.sendRequest({handler: 'copyToClipboard', data: link.href});
+      }
+    } else {
+      HUD.show("Open link in current tab");
+      // When we're opening the link in the current tab, don't navigate to the selected link immediately;
+      // we want to give the user some time to notice which link has received focus.
+      this.linkActivator = function(link) {
+        setTimeout(domUtils.simulateClick.bind(domUtils, link), 400);
+      }
     }
   },
 
@@ -158,10 +162,18 @@ var linkHints = {
     if (this.delayMode)
       return;
 
-    if (event.keyCode == keyCodes.shiftKey && !this.openLinkModeToggle) {
+    var that = this;
+
+    if (event.keyCode == keyCodes.shiftKey && this.shouldOpenInNewTab !== null) {
       // Toggle whether to open link in a new or current tab.
       this.setOpenLinkMode(!this.shouldOpenInNewTab, this.shouldOpenWithQueue, false);
-      this.openLinkModeToggle = true;
+      handlerStack.push({
+        keyup: function(event) {
+          if (event.keyCode !== keyCodes.shiftKey) return;
+          linkHints.setOpenLinkMode(!that.shouldOpenInNewTab, that.shouldOpenWithQueue, false);
+          handlerStack.pop();
+        }
+      });
     }
 
     // TODO(philc): Ignore keys that have modifiers.
@@ -184,21 +196,6 @@ var linkHints = {
     }
   },
 
-  onKeyPressInMode: function(event) {
-    return false;
-  },
-
-  onKeyUpInMode: function(event) {
-    if (this.delayMode)
-      return;
-
-    if (event.keyCode == keyCodes.shiftKey && this.openLinkModeToggle) {
-      // Revert toggle on whether to open link in new or current tab.
-      this.setOpenLinkMode(!this.shouldOpenInNewTab, this.shouldOpenWithQueue, false);
-      this.openLinkModeToggle = false;
-    }
-  },
-
   /*
    * When only one link hint remains, this function activates it in the appropriate way.
    */
@@ -209,31 +206,21 @@ var linkHints = {
       domUtils.simulateSelect(matchedLink);
       this.deactivateMode(delay, function() { that.delayMode = false; });
     } else {
+      // TODO figure out which other input elements should not receive focus
+      if (matchedLink.nodeName.toLowerCase() === 'input' &&
+          matchedLink.type !== 'button')
+        matchedLink.focus();
+      domUtils.flashElement(matchedLink);
+      this.linkActivator(matchedLink);
       if (this.shouldOpenWithQueue) {
-        this.simulateClick(matchedLink);
         this.deactivateMode(delay, function() {
           that.delayMode = false;
           that.activateModeWithQueue();
         });
-      } else if (this.shouldCopyLinkUrl) {
-        this.copyLinkUrl(matchedLink);
-        this.deactivateMode(delay, function() { that.delayMode = false; });
-      } else if (this.shouldOpenInNewTab) {
-        this.simulateClick(matchedLink);
-        matchedLink.focus();
-        this.deactivateMode(delay, function() { that.delayMode = false; });
       } else {
-        // When we're opening the link in the current tab, don't navigate to the selected link immediately;
-        // we want to give the user some feedback depicting which link they've selected by focusing it.
-        setTimeout(this.simulateClick.bind(this, matchedLink), 400);
-        matchedLink.focus();
         this.deactivateMode(delay, function() { that.delayMode = false; });
       }
     }
-  },
-
-  copyLinkUrl: function(link) {
-    chrome.extension.sendRequest({handler: 'copyLinkUrl', data: link.href});
   },
 
   /*
@@ -248,19 +235,6 @@ var linkHints = {
 
   hideMarker: function(linkMarker) {
     linkMarker.style.display = "none";
-  },
-
-  simulateClick: function(link) {
-    // When "clicking" on a link, dispatch the event with the appropriate meta key (CMD on Mac, CTRL on windows)
-    // to open it in a new tab if necessary.
-    var metaKey = (platform == "Mac" && linkHints.shouldOpenInNewTab);
-    var ctrlKey = (platform != "Mac" && linkHints.shouldOpenInNewTab);
-    domUtils.simulateClick(link, { metaKey: metaKey, ctrlKey: ctrlKey });
-
-    // TODO(int3): do this for @role='link' and similar elements as well
-    var nodeName = link.nodeName.toLowerCase();
-    if (nodeName == 'a' || nodeName == 'button')
-      link.blur();
   },
 
   /*
