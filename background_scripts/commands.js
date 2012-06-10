@@ -100,10 +100,8 @@ function clearKeyMappingsAndSetDefaults() {
     "<c-e>": "scrollDown",
     "<c-y>": "scrollUp",
 
-    "f": "scrollFullPageDown",
-    "b": "scrollFullPageUp",
-    "<c-f>": "scrollFullPageDown",
-    "<c-b>": "scrollFullPageUp",
+    "d": "scrollPageDown",
+    "u": "scrollPageUp",
     "r": "reload",
     "gs": "toggleViewSource",
 
@@ -111,17 +109,15 @@ function clearKeyMappingsAndSetDefaults() {
 
     "H": "goBack",
     "L": "goForward",
-    "<c-h>": "goBack",
-    "<c-l>": "goForward",
     "gu": "goUp",
 
     "gi": "focusInput",
 
-    "'":     "linkHints.activateMode",
-    ";":     "linkHints.activateModeToOpenInNewTab",
+    "f":     "linkHints.activateMode",
+    "F":     "linkHints.activateModeToOpenInNewTab",
+    "<a-f>": "linkHints.activateModeWithQueue",
 
     "/": "enterFindMode",
-    "\\": "enterFindMode",
     "n": "performFind",
     "N": "performBackwardsFind",
 
@@ -129,35 +125,26 @@ function clearKeyMappingsAndSetDefaults() {
     "]]": "goNext",
 
     "yy": "copyCurrentUrl",
-    "<C-;>": "linkHints.activateModeToCopyLinkUrl",
+    "yf": "linkHints.activateModeToCopyLinkUrl",
 
     "p": "openCopiedUrlInCurrentTab",
     "P": "openCopiedUrlInNewTab",
 
-    "J": "nextTab",
-    "K": "previousTab",
+    "K": "nextTab",
+    "J": "previousTab",
     "gt": "nextTab",
     "gT": "previousTab",
-    "<c-j>": "nextTab",
-    "<c-k>": "previousTab",
-    "<c-n>": "nextTab",
-    "<c-p>": "previousTab",
-
     "g0": "firstTab",
     "g$": "lastTab",
 
     "t": "createTab",
     "x": "removeTab",
     "X": "restoreTab",
-    "d": "removeTab",
-    "u": "restoreTab",
 
-    "B": "activateBookmarkFindMode",
+    "o": "vomnibar.activate",
+    "O": "vomnibar.activateWithCurrentUrl",
 
-    "o": "fuzzyMode.activateAll",
-    "O": "fuzzyMode.activateAllNewTab",
-
-    "T": "fuzzyMode.activateTabs",
+    "T": "vomnibar.activateTabSelection",
 
     "gf": "nextFrame",
   };
@@ -223,12 +210,9 @@ var commandDescriptions = {
   removeTab: ["Close current tab", { background: true }],
   restoreTab: ["Restore closed tab", { background: true }],
 
-  activateBookmarkFindMode: ["Open a bookmark in the current tab"],
-  activateBookmarkFindModeToOpenInNewTab: ["Open a bookmark in a new tab"],
-
-  'fuzzyMode.activateAll': ["Open URL, bookmark, history entry or a custom search (fuzzy)"],
-  'fuzzyMode.activateAllNewTab': ["Open URL, bookmark, history entry or a custom search (fuzzy, new tab)"],
-  'fuzzyMode.activateTabs': ["Go to a tab in this window (fuzzy)"],
+  "vomnibar.activate": ["Open URL, bookmark, or history entry"],
+  "vomnibar.activateWithCurrentUrl": ["Open URL, bookmark, history entry, starting with the current URL"],
+  "vomnibar.activateTabSelection": ["Search through your open tabs"],
 
   nextFrame: ["Cycle forward to the next frame on the page", { background: true, passCountToFunction: true }]
 };
@@ -248,8 +232,7 @@ var commandGroups = {
      "openCopiedUrlInCurrentTab", "openCopiedUrlInNewTab", "goUp",
      "enterInsertMode", "focusInput",
      "linkHints.activateMode", "linkHints.activateModeToOpenInNewTab", "linkHints.activateModeWithQueue",
-     "activateBookmarkFindMode", "activateBookmarkFindModeToOpenInNewTab",
-     "fuzzyMode.activateAll", "fuzzyMode.activateAllNewTab", "fuzzyMode.activateTabs",
+     "vomnibar.activate", "vomnibar.activateWithCurrentUrl", "vomnibar.activateTabSelection",
      "goPrevious", "goNext", "nextFrame"],
   findCommands: ["enterFindMode", "performFind", "performBackwardsFind"],
   historyNavigation:

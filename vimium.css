@@ -97,7 +97,7 @@ div#vimiumHelpDialog {
   overflow-y: scroll;
   z-index:99999998;
 }
-  
+
 div#vimiumHelpDialog a { color:blue; }
 div#vimiumTitle, div#vimiumTitle span,  div#vimiumTitle * { font-size:20px; }
 #vimiumTitle {
@@ -174,7 +174,7 @@ div#vimiumHelpDialog a.closeButton:hover {
   cursor:default;
   -webkit-user-select:none;
 }
-div#vimiumHelpDialogFooter { 
+div#vimiumHelpDialogFooter {
   display: block;
   position: relative;
 }
@@ -187,198 +187,176 @@ div#vimiumHelpDialogFooter .toggleAdvancedCommands {
 
 /* Vimium HUD CSS */
 
-div.vimiumHUD { 
+div.vimiumHUD {
   display: block;
-  position: fixed; 
-  top: auto; 
-  left: auto; 
-  bottom: 0px; 
-  color: black; 
-  height: 13px; 
-  min-height: 13px; 
-  width: auto; 
-  max-width: 400px; 
-  min-width: 150px; 
-  text-align: left; 
-  background-color: #ebebeb; 
-  padding: 3px 3px 2px 3px; 
-  margin: 0;  
-  border: 1px solid #b3b3b3; 
-  border-radius: 4px 4px 0 0; 
-  font-family: "Lucida Grande", "Arial", "Sans"; 
-  // One less than vimium's hint markers, so link hints can be shown e.g. for the panel's close button.
-  z-index: 99999998; 
-  text-shadow: 0px 1px 2px #FFF; 
-  line-height: 1.0; 
-  opacity: 0; 
-} 
-// Hide the span between search box letters
-div.vimiumHUD span { 
-  display: none; 
-} 
-div.vimiumHUD a:link, div.vimiumHUD a:hover { 
-  background: transparent; 
-  color: blue; 
-  text-decoration: underline; 
-} 
-div.vimiumHUD a:link.close-button { 
-  float:right; 
-  font-family:courier new; 
-  font-weight:bold; 
-  color:#9C9A9A; 
-  text-decoration:none; 
-  padding-left:10px; 
-  margin-top:-1px; 
-  font-size:14px; 
-} 
-div.vimiumHUD a.close-button:hover { 
-  color:#333333; 
-  cursor:default; 
-  -webkit-user-select:none; 
+  position: fixed;
+  top: auto;
+  left: auto;
+  bottom: 0px;
+  color: black;
+  height: 13px;
+  min-height: 13px;
+  width: auto;
+  max-width: 400px;
+  min-width: 150px;
+  text-align: left;
+  background-color: #ebebeb;
+  padding: 3px 3px 2px 3px;
+  margin: 0;
+  border: 1px solid #b3b3b3;
+  border-radius: 4px 4px 0 0;
+  font-family: "Lucida Grande", "Arial", "Sans";
+  /* One less than vimium's hint markers, so link hints can be shown e.g. for the panel's close button. */
+  z-index: 99999997;
+  text-shadow: 0px 1px 2px #FFF;
+  line-height: 1.0;
+  opacity: 0;
 }
-
-/* Bookmarks completion dialog CSS */
-
-div.vimium-dialog {
-  background-color: #ebebeb; 
-  display: block;
-  position:fixed;
-  z-index: 99999998; 
-  border: 1px solid #b3b3b3; 
-  padding:10px;
-  border-radius: 4px; 
+/* Hide the span between search box letters */
+div.vimiumHUD span {
+  display: none;
 }
-
-div.vimium-completions {
-  width:400px;
+div.vimiumHUD a:link, div.vimiumHUD a:hover {
+  background: transparent;
+  color: blue;
+  text-decoration: underline;
 }
-
-div.vimium-completions .vimium-searchBar {
-  display: block;
-  height: 15px;
-  border-bottom: 1px solid #b3b3b3;
-}
-
-div.vimium-completions div.vimium-searchResults div {
-  display: block;
-}
-
-div.vimium-completions div.vimium-searchResults div.vimium-selected{
-  background-color:#aaa;
-  border-radius: 4px; 
-}
-
-div.vimium-completions div{
-  padding:4px;
-}
-
-div.vimium-completions div strong{
+div.vimiumHUD a:link.close-button {
+  float:right;
+  font-family:courier new;
   font-weight:bold;
+  color:#9C9A9A;
+  text-decoration:none;
+  padding-left:10px;
+  margin-top:-1px;
+  font-size:14px;
 }
-
-div.vimium-completions div.vimium-noResults{
-  color:#555;
+div.vimiumHUD a.close-button:hover {
+  color:#333333;
+  cursor:default;
+  -webkit-user-select:none;
 }
 
 body.vimiumFindMode ::selection {
   background: #ff9632;
 };
 
-/* fuzzymode CSS */
+/* Vomnibar CSS */
 
-#fuzzybox ol, #fuzzybox ul {
+#vomnibar ol, #vomnibar ul {
   list-style: none !important;
 }
 
-#fuzzybox {
+#vomnibar {
   position: fixed !important;
   width: 80% !important;
   min-width: 400px !important;
   top: 70px !important;
   left: 50% !important;
   margin: 0 0 0 -40% !important;
-  background: black !important;
-  color: white !important;
   font-family: sans-serif !important;
-  font-size: 30px !important;
+
+  background: #F1F1F1 !important;
   text-align: left !important;
-  padding: 7px 20px 7px 20px !important;
-  opacity: 0.9 !important;
-  border-radius: 10px !important;
-  box-shadow: 5px 5px 5px rgba(0,0,0,0.5) !important;
-  z-index: 99999998 !important;
-}
-
-#fuzzybox ul {
-  list-style: none !important;
-  padding: 7px 0 0 0 !important;
-  margin: 7px 0 0 0 !important;
-  border-top: 2px solid #444 !important;
-}
-
-#fuzzybox li {
-  border-bottom: 1px solid #111 !important;
-  line-height: 1.1em !important;
-  padding: 7px !important;
-  margin: 0 -7px 0 -7px !important;
-  font-size: 18px !important;
-  color: #ddd !important;
-}
-
-#fuzzybox li .fuzzyMatch {
-  color: red !important;
-  font-size: inherit !important;
-  font-family: inherit !important;
-}
-
-#fuzzybox li em, #fuzzybox li .title {
-  color: #444 !important;
-  font-weight: normal !important;
-  font-size: inherit !important;
-  font-family: inherit !important;
-}
-#fuzzybox li em {
-  font-style: italic !important;
-}
-#fuzzybox li em .fuzzyMatch, #fuzzybox li .title .fuzzyMatch {
-  color: #888 !important;
-  font-style: inherit !important;
-  font-weight: bold !important;
-}
-
-#fuzzybox li.selected {
-  background: #222 !important;
-  color: #ccc !important;
   border-radius: 4px !important;
+  box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.8) !important;
+  border: 1px solid #aaa;
+  /* One less than hint markers and the help dialog. */
+  z-index: 99999996 !important;
+}
+
+#vomnibar input {
+  font-size: 20px !important;
+  padding: 4px !important;
+  font-family: inherit !important;
+  border-radius: 3px;
+  border: 1px solid #E8E8E8 !important;
+  box-shadow: #444 0px 0px 1px !important;
+  width: 100% !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+}
+
+#vomnibar .searchArea {
+  padding: 10px !important;
+  background-color: #F1F1F1 !important;
+  border-radius: 4px 4px 0 0 !important;
+  border-bottom: 1px solid #C6C9CE !important;
+}
+
+#vomnibar ul {
+  background-color: white !important;
+  border-radius: 0 0 4px 4px !important;
+  list-style: none !important;
+  padding: 10px 0 !important;
+  padding-top: 0 !important;
+  margin: 0 !important;
+}
+
+#vomnibar li {
+  border-bottom: 1px solid #ddd !important;
+  line-height: 1.1em !important;
+  padding: 7px 10px !important;
+  font-size: 16px !important;
+  color: black !important;
+  position: relative !important;
+}
+
+#vomnibar li:last-of-type {
+  border-bottom: none !important;
+}
+
+#vomnibar li .topHalf, #vomnibar li .bottomHalf { overflow: hidden !important; }
+#vomnibar li .bottomHalf {
+  margin-top: 2px;
+  font-size: 15px !important;
+}
+
+#vomnibar li .source {
+  color: #777 !important;
+  margin-right: 4px !important;
+}
+#vomnibar li .relevancy {
+  position: absolute;
+  right: 0;
+  top: 0;
+  padding: 5px;
+  background-color: white;
+  color: black !important;
+  font-family: monospace;
+  width: 100px;
+  overflow: hidden;
+}
+
+#vomnibar li .url {
+  white-space: nowrap;
+  color: #224684 !important;
+}
+
+#vomnibar li .match {
+  font-size: inherit !important;
+  font-family: inherit !important;
+  font-weight: bold !important;
+  color: black !important;
+}
+
+#vomnibar li em, #vomnibar li .title {
+  color: black !important;
+  margin-left: 4px !important;
+  font-weight: normal !important;
+  font-size: inherit !important;
+  font-family: inherit !important;
+}
+#vomnibar li em { font-style: italic !important; }
+#vomnibar li em .match, #vomnibar li .title .match {
+  color: #333 !important;
+  text-decoration: underline !important;
+}
+
+#vomnibar li.selected {
+  background: #BBCEE9 !important;
   font-weight: normal !important;
   font-family: inherit !important;
-}
-#fuzzybox li.selected em, #fuzzybox li.selected .title {
-  color: #666 !important;
-}
-
-#fuzzybox .input {
-  font-size: 28px !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  font-size: inherit !important;
-  font-family: inherit !important;
-}
-
-#fuzzybox .input .prompt {
-  color: orange !important;
-  font-size: inherit !important;
-  font-family: inherit !important;
-}
-
-#fuzzybox .input .query {
-  font-size: inherit !important;
-  font-family: inherit !important;
-  color: inherit !important;
-  background: none !important;
-  outline: none !important;
-  border: none !important;
-  width: 90% !important;
 }
 
 div#vimiumFlash {
