@@ -100,8 +100,10 @@ function clearKeyMappingsAndSetDefaults() {
     "<c-e>": "scrollDown",
     "<c-y>": "scrollUp",
 
-    "d": "scrollPageDown",
-    "u": "scrollPageUp",
+    "f": "scrollFullPageDown",
+    "b": "scrollFullPageUp",
+    "<c-f>": "scrollFullPageDown",
+    "<c-b>": "scrollFullPageUp",
     "r": "reload",
     "gs": "toggleViewSource",
 
@@ -109,15 +111,17 @@ function clearKeyMappingsAndSetDefaults() {
 
     "H": "goBack",
     "L": "goForward",
+    "<c-h>": "goBack",
+    "<c-l>": "goForward",
     "gu": "goUp",
 
     "gi": "focusInput",
 
-    "f":     "linkHints.activateMode",
-    "F":     "linkHints.activateModeToOpenInNewTab",
-    "<a-f>": "linkHints.activateModeWithQueue",
+    "'":     "linkHints.activateMode",
+    ";":     "linkHints.activateModeToOpenInNewTab",
 
     "/": "enterFindMode",
+    "\\": "enterFindMode",
     "n": "performFind",
     "N": "performBackwardsFind",
 
@@ -125,21 +129,28 @@ function clearKeyMappingsAndSetDefaults() {
     "]]": "goNext",
 
     "yy": "copyCurrentUrl",
-    "yf": "linkHints.activateModeToCopyLinkUrl",
+    "<C-;>": "linkHints.activateModeToCopyLinkUrl",
 
     "p": "openCopiedUrlInCurrentTab",
     "P": "openCopiedUrlInNewTab",
 
-    "K": "nextTab",
-    "J": "previousTab",
+    "J": "nextTab",
+    "K": "previousTab",
     "gt": "nextTab",
     "gT": "previousTab",
+    "<c-j>": "nextTab",
+    "<c-k>": "previousTab",
+    "<c-n>": "nextTab",
+    "<c-p>": "previousTab",
+
     "g0": "firstTab",
     "g$": "lastTab",
 
     "t": "createTab",
     "x": "removeTab",
     "X": "restoreTab",
+    "d": "removeTab",
+    "u": "restoreTab",
 
     "o": "vomnibar.activate",
     "O": "vomnibar.activateWithCurrentUrl",
