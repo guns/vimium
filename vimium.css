@@ -1,5 +1,14 @@
-/* All of these declarations contain more specifiers than nesscesary to increase their specificity and help to
-   ensure they override broad CSS declarations by the website vimium overlays. */
+/*
+ * Many CSS class names in this file use the verbose "vimiumXYZ" as the class name. This is so we don't
+ * use the same CSS class names that the page is using, so the page's CSS doesn't mess with the style of our
+ * Vimium dialogs.
+ */
+
+/*
+ * This vimiumReset class can be added to any of our UI elements to give it a clean slate. This is useful in
+ * case the page has declared a broad rule like "a { padding: 50px; }" which will mess up our UI. These
+ * declarations contain more specifiers than necessary to increase their specificity (precedence).
+ */
 .vimiumReset,
 div.vimiumReset,
 span.vimiumReset,
@@ -12,7 +21,6 @@ td.vimiumReset,
 tr.vimiumReset {
   background: none;
   border: none;
-  border: none;
   bottom: auto;
   box-shadow: none;
   color: black;
@@ -20,7 +28,7 @@ tr.vimiumReset {
   display: inline;
   float: none;
   font-family : "Helvetica Neue", "Helvetica", "Arial", "Sans";
-  font-size: 12px;
+  font-size: inherit;
   font-style: normal;
   font-variant: normal;
   font-weight: normal;
@@ -206,6 +214,7 @@ div.vimiumHUD {
   border: 1px solid #b3b3b3;
   border-radius: 4px 4px 0 0;
   font-family: "Lucida Grande", "Arial", "Sans";
+  font-size: 12px;
   /* One less than vimium's hint markers, so link hints can be shown e.g. for the panel's close button. */
   z-index: 99999997;
   text-shadow: 0px 1px 2px #FFF;
@@ -244,125 +253,129 @@ body.vimiumFindMode ::selection {
 /* Vomnibar CSS */
 
 #vomnibar ol, #vomnibar ul {
-  list-style: none !important;
+  list-style: none;
+  display: block;
 }
 
 #vomnibar {
-  position: fixed !important;
-  width: 80% !important;
-  min-width: 400px !important;
-  top: 70px !important;
-  left: 50% !important;
-  margin: 0 0 0 -40% !important;
-  font-family: sans-serif !important;
+  display: block;
+  position: fixed;
+  width: 80%;
+  min-width: 400px;
+  top: 70px;
+  left: 50%;
+  margin: 0 0 0 -40%;
+  font-family: sans-serif;
 
-  background: #F1F1F1 !important;
-  text-align: left !important;
-  border-radius: 4px !important;
-  box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.8) !important;
+  background: #F1F1F1;
+  text-align: left;
+  border-radius: 4px;
+  box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.8);
   border: 1px solid #aaa;
   /* One less than hint markers and the help dialog. */
-  z-index: 99999996 !important;
+  z-index: 99999996;
 }
 
 #vomnibar input {
-  font-size: 20px !important;
-  padding: 4px !important;
-  font-family: inherit !important;
+  font-size: 20px;
+  padding: 4px;
+  background-color: white;
   border-radius: 3px;
-  border: 1px solid #E8E8E8 !important;
-  box-shadow: #444 0px 0px 1px !important;
-  width: 100% !important;
-  outline: none !important;
-  box-sizing: border-box !important;
+  border: 1px solid #E8E8E8;
+  box-shadow: #444 0px 0px 1px;
+  width: 100%;
+  outline: none;
+  box-sizing: border-box;
 }
 
-#vomnibar .searchArea {
-  padding: 10px !important;
-  background-color: #F1F1F1 !important;
-  border-radius: 4px 4px 0 0 !important;
-  border-bottom: 1px solid #C6C9CE !important;
+#vomnibar .vomnibarSearchArea {
+  display: block;
+  padding: 10px;
+  background-color: #F1F1F1;
+  border-radius: 4px 4px 0 0;
+  border-bottom: 1px solid #C6C9CE;
 }
 
 #vomnibar ul {
-  background-color: white !important;
-  border-radius: 0 0 4px 4px !important;
-  list-style: none !important;
-  padding: 10px 0 !important;
-  padding-top: 0 !important;
-  margin: 0 !important;
+  background-color: white;
+  border-radius: 0 0 4px 4px;
+  list-style: none;
+  padding: 10px 0;
+  padding-top: 0;
 }
 
 #vomnibar li {
-  border-bottom: 1px solid #ddd !important;
-  line-height: 1.1em !important;
-  padding: 7px 10px !important;
-  font-size: 16px !important;
-  color: black !important;
-  position: relative !important;
+  border-bottom: 1px solid #ddd;
+  line-height: 1.1em;
+  padding: 7px 10px;
+  font-size: 16px;
+  color: black;
+  position: relative;
 }
 
 #vomnibar li:last-of-type {
-  border-bottom: none !important;
+  border-bottom: none;
 }
 
-#vomnibar li .topHalf, #vomnibar li .bottomHalf { overflow: hidden !important; }
-#vomnibar li .bottomHalf {
-  margin-top: 2px;
-  font-size: 15px !important;
+#vomnibar li .vomnibarTopHalf, #vomnibar li .vomnibarBottomHalf {
+  display: block;
+  overflow: hidden;
 }
 
-#vomnibar li .source {
-  color: #777 !important;
-  margin-right: 4px !important;
+#vomnibar li .vomnibarBottomHalf {
+  font-size: 15px;
+  margin-top: 3px;
+  padding: 2px 0;
 }
-#vomnibar li .relevancy {
+
+#vomnibar li .vomnibarSource {
+  color: #777;
+  margin-right: 4px;
+}
+#vomnibar li .vomnibarRelevancy {
   position: absolute;
   right: 0;
   top: 0;
   padding: 5px;
   background-color: white;
-  color: black !important;
+  color: black;
   font-family: monospace;
   width: 100px;
   overflow: hidden;
 }
 
-#vomnibar li .url {
+#vomnibar li .vomnibarUrl {
   white-space: nowrap;
-  color: #224684 !important;
+  color: #224684;
 }
 
-#vomnibar li .match {
-  font-size: inherit !important;
-  font-family: inherit !important;
-  font-weight: bold !important;
-  color: black !important;
+#vomnibar li .vomnibarMatch {
+  font-weight: bold;
+  color: black;
 }
 
-#vomnibar li em, #vomnibar li .title {
-  color: black !important;
-  margin-left: 4px !important;
-  font-weight: normal !important;
-  font-size: inherit !important;
-  font-family: inherit !important;
+#vomnibar li em, #vomnibar li .vomnibarTitle {
+  color: black;
+  margin-left: 4px;
+  font-weight: normal;
 }
-#vomnibar li em { font-style: italic !important; }
-#vomnibar li em .match, #vomnibar li .title .match {
-  color: #333 !important;
-  text-decoration: underline !important;
+#vomnibar li em { font-style: italic; }
+#vomnibar li em .vomnibarMatch, #vomnibar li .vomnibarTitle .vomnibarMatch {
+  color: #333;
+  text-decoration: underline;
 }
 
-#vomnibar li.selected {
-  background: #BBCEE9 !important;
-  font-weight: normal !important;
-  font-family: inherit !important;
+#vomnibar li.vomnibarSelected {
+  background-color: #BBCEE9;
+  font-weight: normal;
 }
+
+
 
 div#vimiumFlash {
   box-shadow: 0px 0px 4px 2px #4183C4;
   padding: 1px;
-  background: transparent;
+  background-color: transparent;
   position: absolute;
   z-index: 99999;
 }

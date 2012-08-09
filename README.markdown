@@ -11,10 +11,12 @@ You can install the stable version of Vimium from the
 
 Alternatively, you can install it from source:
 
-1. Navigate to `chrome://extensions`
-2. Toggle into Developer Mode
-3. Click on "Load Unpacked Extension..."
-4. Select the Vimium directory.
+1. Install [Coffeescript](http://coffeescript.org/#installation) (needed to build vimium).
+2. Run `cake build` in the Vimium directory.
+3. Navigate to `chrome://extensions`
+4. Toggle into Developer Mode
+5. Click on "Load Unpacked Extension..."
+6. Select the Vimium directory.
 
 The Options page can be reached via a link on the help dialog (hit `?`) or via the button next to Vimium on
 the Chrome Extensions page (`chrome://extensions`).
@@ -45,9 +47,17 @@ Navigating the current page:
     yf      copy a link url to the clipboard
     gf      cycle forward to the next frame
 
+Navigating to new pages:
+
+    o       Open URL, bookmark, or history entry
+    O       Open URL, bookmark, history entry in a new tab
+    b       Open bookmark
+    B       Open bookmark in a new tab
+
 Using find:
 
     /       enter find mode -- type your search query and hit enter to search or esc to cancel
+            See here for advanced usage (regular expressions): https://github.com/philc/vimium/wiki/Find-Mode
     n       cycle forward to the next find match
     N       cycle backward to the previous find match
 
@@ -65,6 +75,7 @@ Manipulating tabs:
     t          create tab
     x          close current tab
     X          restore closed tab (i.e. unwind the 'x' command)
+    T          search through your open tabs
 
 Additional advanced browsing commands:
 
@@ -132,20 +143,40 @@ Vimium is written in Coffeescript, which compiles to Javascript. To build Vimium
 When you're done, send us a pull request on Github. Feel free to include a change to the CREDITS file with
 your patch.
 
-Some brief coding style guidelines: 1) follow the style already present in the file, 2) ensure your lines
+A few coding style guidelines: 1) follow the style already present in the file, 2) ensure your lines
 don't exceed 110 characters.
 
 Release Notes
 -------------
 
-1.33 (Unreleased)
+1.38 (Unreleased)
 
-- A browser icon to quickly add sites to Vimium's exclude list.
+- 'O' now opens Vomnibar results in a new tab. 'B' does the same for bookmarks only.
+
+1.37 (07/07/2012)
+
+- Select the first result by default in Vomnibar tab and bookmark modes.
+
+1.36 (07/07/2012)
+
+- 'b' brings up a bookmark-only Vomnibar.
+- Better support for some bookmarklets.
+
+1.35 (07/05/2012)
+
+- Bugfixes.
+
+1.34 (07/03/2012)
+
+- A bugfix for bookmarklets in Vomnibar.
+
+1.33 (07/02/2012)
+
 - A Vomnibar, which allows you to open sites from history, bookmarks, and tabs using Vimium's UI. Type "o" to try it.
 
-1.32 (03/05/2011)
+1.32 (03/05/2012)
 
-- More tweaks to the next / previous link-detection algorithm
+- More tweaks to the next / previous link-detection algorithm.
 - Minor bug fixes.
 
 1.31 (02/28/2012)
