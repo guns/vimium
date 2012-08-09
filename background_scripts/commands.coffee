@@ -123,8 +123,10 @@ defaultKeyMappings =
   "<c-e>": "scrollDown"
   "<c-y>": "scrollUp"
 
-  "d": "scrollPageDown"
-  "u": "scrollPageUp"
+  "f": "scrollFullPageDown"
+  "b": "scrollFullPageUp"
+  "<c-f>": "scrollFullPageDown"
+  "<c-b>": "scrollFullPageUp"
   "r": "reload"
   "gs": "toggleViewSource"
 
@@ -132,15 +134,17 @@ defaultKeyMappings =
 
   "H": "goBack"
   "L": "goForward"
+  "<c-h>": "goBack"
+  "<c-l>": "goForward"
   "gu": "goUp"
 
   "gi": "focusInput"
 
-  "f":     "LinkHints.activateMode"
-  "F":     "LinkHints.activateModeToOpenInNewTab"
-  "<a-f>": "LinkHints.activateModeWithQueue"
+  "'": "LinkHints.activateMode"
+  ";": "LinkHints.activateModeToOpenInNewTab"
 
   "/": "enterFindMode"
+  "\\": "enterFindMode"
   "n": "performFind"
   "N": "performBackwardsFind"
 
@@ -148,28 +152,33 @@ defaultKeyMappings =
   "]]": "goNext"
 
   "yy": "copyCurrentUrl"
-  "yf": "LinkHints.activateModeToCopyLinkUrl"
+  "<c-;>": "LinkHints.activateModeToCopyLinkUrl"
 
   "p": "openCopiedUrlInCurrentTab"
   "P": "openCopiedUrlInNewTab"
 
-  "K": "nextTab"
-  "J": "previousTab"
+  "J": "nextTab"
+  "K": "previousTab"
   "gt": "nextTab"
   "gT": "previousTab"
   "g0": "firstTab"
   "g$": "lastTab"
+  "<c-j>": "nextTab"
+  "<c-k>": "previousTab"
+  "<c-n>": "nextTab"
+  "<c-p>": "previousTab"
 
   "t": "createTab"
   "x": "removeTab"
   "X": "restoreTab"
+  "d": "removeTab"
+  "u": "restoreTab"
 
   "o": "Vomnibar.activate"
   "O": "Vomnibar.activateInNewTab"
 
   "T": "Vomnibar.activateTabSelection"
 
-  "b": "Vomnibar.activateBookmarks"
   "B": "Vomnibar.activateBookmarksInNewTab"
 
   "gf": "nextFrame"

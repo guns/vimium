@@ -52,7 +52,8 @@ KeyboardUtils =
 
   isEscape: (event) ->
     # c-[ is mapped to ESC in Vim by default.
-    (event.keyCode == @keyCodes.ESC) || (event.ctrlKey && @getKeyChar(event) == '[')
+    (event.keyCode == @keyCodes.ESC) || (event.ctrlKey && @getKeyChar(event) == '[') ||
+      (event.ctrlKey && @getKeyChar(event) == 'c') # Ctrl-c as ESC
 
 KeyboardUtils.init()
 
